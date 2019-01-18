@@ -9,9 +9,8 @@ public class Main : MonoBehaviour
 {
     void Start()
     {
-        RunSmokeTest();
     }
-    void RunSmokeTest()
+    public void RunSmokeTest()
     {
         // run some simple tests to create and invoke a Game
         var game = new Game(2112);
@@ -53,5 +52,9 @@ public class Main : MonoBehaviour
             game.DoTurn();
         }
         Debug.LogFormat("game ended with {0}", game.GameProgress);
+    }
+    public void RunAnimatedTest()
+    {
+
     }
 }
