@@ -7,9 +7,12 @@ using ScryptTheCrypt;
 public class Main : MonoBehaviour
 {
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
+    [SerializeField] private GameObject spriteParent = null;
     public void RunSmokeTest()
     {
         var game = Util.SampleGame;
+        RenderGame(game);
+
         GameEvents.Instance.AttackEnd += (g, a, b) =>
         {
             Debug.LogFormat("{0} {1}/{2} attacked {3} {4}/{5}", a.name, a.Health, a.baseHealth, b.name, b.Health, b.baseHealth);
@@ -38,7 +41,9 @@ public class Main : MonoBehaviour
     {
         var animationList = new List<IEnumerator>();
 
-        var game = Util.SampleGame;
+        var game = Util.GetSampleGame(1000, 6);
+        RenderGame(game);
+
         GameEvents.Instance.TargetChosen += (g, a) =>
         {
             animationList.Add(AnimateTargetChoice(a.name));
@@ -82,5 +87,34 @@ public class Main : MonoBehaviour
     {
         Debug.LogFormat("AnimateDeath of {0}", name);
         yield return new WaitForSeconds(animationTime);
+    }
+    void RenderGame(Game game)
+    {
+        var assets = GetComponent<AssetLink>();
+
+        const float xPlayers = -3;
+        const float xMobs = 3;
+        const float ySpacing = 2;
+
+        float yStart = -(game.players.Count * ySpacing) / 2;
+        foreach(var player in game.players)
+        {
+            var playerObj = Instantiate(assets.PlayerSprite);
+
+            playerObj.transform.parent = spriteParent.transform;
+            playerObj.transform.position = new Vector2(xPlayers, yStart);
+
+            yStart += ySpacing;
+        }
+        yStart = -(game.mobs.Count * ySpacing) / 2;
+        foreach(var player in game.players)
+        {
+            var playerObj = Instantiate(assets.MobSprite);
+
+            playerObj.transform.parent = spriteParent.transform;
+            playerObj.transform.position = new Vector2(xMobs, yStart);
+
+            yStart += ySpacing;
+        }
     }
 }

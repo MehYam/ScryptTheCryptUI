@@ -24,6 +24,38 @@ public static class Util
             }
         }
     }
+    static GameActor[] actors = new GameActor[] 
+    {
+        new GameActor("alice"),
+        new GameActor("bob"),
+        new GameActor("carly"),
+        new GameActor("denise"),
+        new GameActor("edgar"),
+        new GameActor("faust"),
+        new GameActor("gabbers"),
+        new GameActor("heiki"),
+        new GameActor("ivano"),
+        new GameActor("jakob"),
+        new GameActor("kai"),
+        new GameActor("leo"),
+        new GameActor("minerva")
+    };
+    static GameWeapon[] weapons = new GameWeapon[] 
+    {
+        new GameWeapon("axe", 22),
+        new GameWeapon("ballista", 20),
+        new GameWeapon("cudgel", 9),
+        new GameWeapon("dingbat", 10),
+        new GameWeapon("electric sword", 15),
+        new GameWeapon("fencing sabre", 19),
+        new GameWeapon("gun knife", 30),
+        new GameWeapon("helishears", 31),
+        new GameWeapon("ignition rod", 14),
+        new GameWeapon("jax", 18),
+        new GameWeapon("kelvin sapper", 11),
+        new GameWeapon("long shiv", 10),
+        new GameWeapon("monkey bite", 18)
+    };
     static public Game SampleGame
     {
         get
@@ -58,5 +90,29 @@ public static class Util
 
             return game;
         }
+    }
+    static public Game GetSampleGame(int seed, int nActors)
+    {
+        var game = new Game(seed);
+        nActors = Mathf.Min(nActors, weapons.Length);
+
+        for (var i = 0; i < nActors; ++i)
+        {
+            var player = Util.actors[i];
+            var alignment = (i % 2) == 0 ? Game.ActorAlignment.Player : Game.ActorAlignment.Mob;
+            player.AddAction(new ActionAttack());
+            player.Weapon = Util.weapons[i];
+            if (alignment == Game.ActorAlignment.Player)
+            {
+                player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+                game.players.Add(player);
+            }
+            else
+            {
+                player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+                game.mobs.Add(player);
+            }
+        }
+        return game;
     }
 }
