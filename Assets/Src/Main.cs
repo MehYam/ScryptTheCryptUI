@@ -67,7 +67,7 @@ public class Main : MonoBehaviour
         GameEvents.ReleaseAllListeners();
         yield return null;
     }
-    const float animationTime = 2;
+    const float animationTime = 1;
     IEnumerator AnimateTargetChoice(string name)
     {
         Debug.LogFormat("AnimateTargetChoice of {0}", name);

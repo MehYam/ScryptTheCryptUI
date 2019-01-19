@@ -10,6 +10,12 @@ public static class Util
     // brilliant idea from https://gamedev.stackexchange.com/questions/63721/coroutines-in-series
     static public IEnumerator CoroutineSeries(params IEnumerator[] series)
     {
+        // in a nutshell:  this works with StartCoroutine by returning an enumerator of enumerators.
+        //
+        // IEnumerator +yield cause a function scope to be compiled as an iterator instance.  Any
+        // arguments passed into that function are stored in the instance, so it functions a little
+        // like a closure or C++ lambda.  MoveNext(), called internally by Unity after StartCoroutine,
+        // or in a foreach loop, execute the actual code of the function.
         foreach(var routine in series)
         {
             while (routine.MoveNext())
