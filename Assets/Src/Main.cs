@@ -44,6 +44,10 @@ public class Main : MonoBehaviour
         var game = Util.GetSampleGame(1000, 6);
         RenderGame(game);
 
+        GameEvents.Instance.ActorActionsStart += (g, a) =>
+        {
+            animationList.Add(AnimateActorActionsStart(a.name));
+        };
         GameEvents.Instance.TargetChosen += (g, a) =>
         {
             animationList.Add(AnimateTargetChoice(a.name));
@@ -73,19 +77,24 @@ public class Main : MonoBehaviour
         yield return null;
     }
     const float animationTime = 1;
+    IEnumerator AnimateActorActionsStart(string name)
+    {
+        Debug.LogFormat("ActionsStart of {0}", name);
+        yield return new WaitForSeconds(animationTime);
+    }
     IEnumerator AnimateTargetChoice(string name)
     {
-        Debug.LogFormat("AnimateTargetChoice of {0}", name);
+        Debug.LogFormat("TargetChoice of {0}", name);
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateAttack(string name)
     {
-        Debug.LogFormat("AnimateAttack of {0}", name);
+        Debug.LogFormat("Attack of {0}", name);
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateDeath(string name)
     {
-        Debug.LogFormat("AnimateDeath of {0}", name);
+        Debug.LogFormat("Death of {0}", name);
         yield return new WaitForSeconds(animationTime);
     }
     void RenderGame(Game game)
@@ -97,23 +106,26 @@ public class Main : MonoBehaviour
         const float ySpacing = 2;
 
         float yStart = -(game.players.Count * ySpacing) / 2;
+        GameObject createSprite(GameObject prefab)
+        {
+            var retval = Instantiate(assets.PlayerSprite);
+            retval.layer = LayerMask.NameToLayer("CharacterLayer");
+            retval.GetComponent<SpriteRenderer>().sortingLayerName = "Character";
+
+            retval.transform.parent = spriteParent.transform;
+            return retval;
+        }
         foreach(var player in game.players)
         {
-            var playerObj = Instantiate(assets.PlayerSprite);
-
-            playerObj.transform.parent = spriteParent.transform;
+            var playerObj = createSprite(assets.PlayerSprite);
             playerObj.transform.position = new Vector2(xPlayers, yStart);
-
             yStart += ySpacing;
         }
         yStart = -(game.mobs.Count * ySpacing) / 2;
         foreach(var player in game.players)
         {
-            var playerObj = Instantiate(assets.MobSprite);
-
-            playerObj.transform.parent = spriteParent.transform;
+            var playerObj = createSprite(assets.MobSprite);
             playerObj.transform.position = new Vector2(xMobs, yStart);
-
             yStart += ySpacing;
         }
     }

@@ -98,20 +98,19 @@ public static class Util
 
         for (var i = 0; i < nActors; ++i)
         {
-            var player = Util.actors[i];
-            var alignment = (i % 2) == 0 ? Game.ActorAlignment.Player : Game.ActorAlignment.Mob;
-            player.AddAction(new ActionAttack());
-            player.Weapon = Util.weapons[i];
-            if (alignment == Game.ActorAlignment.Player)
+            var actor = Util.actors[i];
+            if ((i % 2) == 0) // swap between players and mobs
             {
-                player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-                game.players.Add(player);
+                actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+                game.players.Add(actor);
             }
             else
             {
-                player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
-                game.mobs.Add(player);
+                actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+                game.mobs.Add(actor);
             }
+            actor.AddAction(new ActionAttack());
+            actor.Weapon = Util.weapons[i];
         }
         return game;
     }
