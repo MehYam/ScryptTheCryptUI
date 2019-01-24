@@ -69,6 +69,10 @@ public class Main : MonoBehaviour
         {
             animationList.Add(AnimateAttack(a.name));
         };
+        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
+        {
+            animationList.Add(AnimateHealthChange(a, oldHealth));
+        };
         GameEvents.Instance.Death += (g, a) =>
         {
             animationList.Add(AnimateDeath(a.name));
@@ -102,8 +106,7 @@ public class Main : MonoBehaviour
         var slot = actorToCharacterSlot[actor];
         slot.ShowTurnIndicator(false);
 
-        GameActor target = actor.GetAttribute(GameActor.Attribute.Target) as GameActor;
-        if (target != null)
+        if (actor.GetAttribute(GameActor.Attribute.Target) is GameActor target)
         {
             var targetSlot = actorToCharacterSlot[target];
             targetSlot.ShowTargetIndicator(false);
@@ -113,8 +116,7 @@ public class Main : MonoBehaviour
     }
     IEnumerator AnimateTargetChoice(GameActor actor)
     {
-        GameActor target = actor.GetAttribute(GameActor.Attribute.Target) as GameActor;
-        if (target != null) {
+        if (actor.GetAttribute(GameActor.Attribute.Target) is GameActor target) {
             var slot = actorToCharacterSlot[target];
             slot.ShowTargetIndicator(true);
         }
@@ -129,6 +131,13 @@ public class Main : MonoBehaviour
     {
         Debug.LogFormat("Death of {0}", name);
         yield return new WaitForSeconds(animationTime);
+    }
+    IEnumerator AnimateHealthChange(GameActor actor, float oldHealth)
+    {
+        var slot = actorToCharacterSlot[actor];
+        slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
+
+        yield return null;
     }
     readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     void RenderGame(Game game)
