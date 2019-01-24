@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8723777152601229907}
   - component: {fileID: 5118253571444409749}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: CharacterSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -55,6 +55,8 @@ MonoBehaviour:
   CallToAttentionIndicator: {fileID: 6528129649715458515, guid: 6b1c698fa080f9d43940854d97ef68d5,
     type: 3}
   Floor: {fileID: 8723777154146034900}
+  NameplateUI: {fileID: 711459742546751948, guid: 6b11acc2abf2fac4b9c5ae6e8a129591,
+    type: 3}
 --- !u!1 &8723777154146034900
 GameObject:
   m_ObjectHideFlags: 0
@@ -64,7 +66,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8723777154146034899}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Floor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -79,7 +81,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8723777154146034900}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.06, y: -0.73, z: 0}
+  m_LocalPosition: {x: 0.025, y: -0.5, z: 0}
   m_LocalScale: {x: 1, y: 0.56, z: 1}
   m_Children: []
   m_Father: {fileID: 8723777152601229907}

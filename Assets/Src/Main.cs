@@ -6,8 +6,15 @@ using ScryptTheCrypt;
 
 public class Main : MonoBehaviour
 {
+    [SerializeField] private UnityEngine.UI.Button runAnimatedTestButton = null;
+    [SerializeField] private UnityEngine.UI.Button runSmokeTestButton = null;
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject spriteParent = null;
+    private void Start()
+    {
+        runAnimatedTestButton.interactable = true;
+        runSmokeTestButton.interactable = true;
+    }
     public void RunSmokeTest()
     {
         var game = Util.SampleGame;
@@ -39,6 +46,8 @@ public class Main : MonoBehaviour
     }
     IEnumerator AnimateTest()
     {
+        runAnimatedTestButton.interactable = false;
+
         var animationList = new List<IEnumerator>();
 
         var game = Util.GetSampleGame(1000, 6);
@@ -78,22 +87,18 @@ public class Main : MonoBehaviour
         Debug.LogFormat("game ended with {0}", game.GameProgress);
 
         GameEvents.ReleaseAllListeners();
-        yield return null;
+
+        runAnimatedTestButton.interactable = true;
     }
     const float animationTime = 1;
     IEnumerator AnimateActorActionsStart(GameActor actor)
     {
-        Debug.LogFormat("ActionsStart of {0}", actor.name);
-
         var slot = actorToCharacterSlot[actor];
         slot.ShowTurnIndicator(true);
-
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateActorActionsEnd(GameActor actor)
     {
-        Debug.LogFormat("ActionsEnd of {0}", actor.name);
-
         var slot = actorToCharacterSlot[actor];
         slot.ShowTurnIndicator(false);
 
@@ -108,8 +113,6 @@ public class Main : MonoBehaviour
     }
     IEnumerator AnimateTargetChoice(GameActor actor)
     {
-        Debug.LogFormat("TargetChoice of {0}", actor.name);
-
         GameActor target = actor.GetAttribute(GameActor.Attribute.Target) as GameActor;
         if (target != null) {
             var slot = actorToCharacterSlot[target];
@@ -136,14 +139,18 @@ public class Main : MonoBehaviour
 
         const float xPlayers = -3;
         const float xMobs = 3;
-        const float ySpacing = 2;
+        const float ySpacing = 3;
 
-        float yStart = -(game.players.Count * ySpacing) / 2;
-        GameObject createSlot(GameActor actor, Game.ActorAlignment mobType)
+        float yStart = 1-(game.players.Count * ySpacing) / 2;
+        GameObject createSlot(GameActor actor, Game.ActorAlignment mobType, float x, float y)
         {
             var retval = Instantiate(assets.CharacterSlotPrefab);
             var slot = retval.GetComponent<CharacterSlot>();
+            slot.transform.position = new Vector2(x, y);
+
             slot.ShowCharacter(mobType);
+            slot.ShowNameplate();
+            slot.Nameplate.Name.text = actor.name;
             retval.transform.parent = spriteParent.transform;
 
             actorToCharacterSlot[actor] = slot;
@@ -151,15 +158,13 @@ public class Main : MonoBehaviour
         }
         foreach(var player in game.players)
         {
-            var playerObj = createSlot(player, Game.ActorAlignment.Player);
-            playerObj.transform.position = new Vector2(xPlayers, yStart);
+            var slot = createSlot(player, Game.ActorAlignment.Player, xPlayers, yStart);
             yStart += ySpacing;
         }
-        yStart = -(game.mobs.Count * ySpacing) / 2;
+        yStart = 1-(game.mobs.Count * ySpacing) / 2;
         foreach(var mob in game.mobs)
         {
-            var playerObj = createSlot(mob, Game.ActorAlignment.Mob);
-            playerObj.transform.position = new Vector2(xMobs, yStart);
+            var slot = createSlot(mob, Game.ActorAlignment.Mob, xMobs, yStart);
             yStart += ySpacing;
         }
     }
