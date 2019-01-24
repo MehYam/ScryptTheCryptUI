@@ -46,11 +46,15 @@ public class Main : MonoBehaviour
 
         GameEvents.Instance.ActorActionsStart += (g, a) =>
         {
-            animationList.Add(AnimateActorActionsStart(a.name));
+            animationList.Add(AnimateActorActionsStart(a));
+        };
+        GameEvents.Instance.ActorActionsEnd += (g, a) =>
+        {
+            animationList.Add(AnimateActorActionsEnd(a));
         };
         GameEvents.Instance.TargetChosen += (g, a) =>
         {
-            animationList.Add(AnimateTargetChoice(a.name));
+            animationList.Add(AnimateTargetChoice(a));
         };
         GameEvents.Instance.AttackEnd += (g, a, b) =>
         {
@@ -77,14 +81,40 @@ public class Main : MonoBehaviour
         yield return null;
     }
     const float animationTime = 1;
-    IEnumerator AnimateActorActionsStart(string name)
+    IEnumerator AnimateActorActionsStart(GameActor actor)
     {
-        Debug.LogFormat("ActionsStart of {0}", name);
+        Debug.LogFormat("ActionsStart of {0}", actor.name);
+
+        var slot = actorToCharacterSlot[actor];
+        slot.ShowTurnIndicator(true);
+
         yield return new WaitForSeconds(animationTime);
     }
-    IEnumerator AnimateTargetChoice(string name)
+    IEnumerator AnimateActorActionsEnd(GameActor actor)
     {
-        Debug.LogFormat("TargetChoice of {0}", name);
+        Debug.LogFormat("ActionsEnd of {0}", actor.name);
+
+        var slot = actorToCharacterSlot[actor];
+        slot.ShowTurnIndicator(false);
+
+        GameActor target = actor.GetAttribute(GameActor.Attribute.Target) as GameActor;
+        if (target != null)
+        {
+            var targetSlot = actorToCharacterSlot[target];
+            targetSlot.ShowTargetIndicator(false);
+        }
+
+        yield return new WaitForSeconds(animationTime);
+    }
+    IEnumerator AnimateTargetChoice(GameActor actor)
+    {
+        Debug.LogFormat("TargetChoice of {0}", actor.name);
+
+        GameActor target = actor.GetAttribute(GameActor.Attribute.Target) as GameActor;
+        if (target != null) {
+            var slot = actorToCharacterSlot[target];
+            slot.ShowTargetIndicator(true);
+        }
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateAttack(string name)
@@ -97,34 +127,38 @@ public class Main : MonoBehaviour
         Debug.LogFormat("Death of {0}", name);
         yield return new WaitForSeconds(animationTime);
     }
+    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     void RenderGame(Game game)
     {
         var assets = GetComponent<AssetLink>();
+
+        actorToCharacterSlot.Clear();
 
         const float xPlayers = -3;
         const float xMobs = 3;
         const float ySpacing = 2;
 
         float yStart = -(game.players.Count * ySpacing) / 2;
-        GameObject createSprite(GameObject prefab)
+        GameObject createSlot(GameActor actor, Game.ActorAlignment mobType)
         {
-            var retval = Instantiate(assets.PlayerSprite);
-            retval.layer = LayerMask.NameToLayer("CharacterLayer");
-            retval.GetComponent<SpriteRenderer>().sortingLayerName = "Character";
-
+            var retval = Instantiate(assets.CharacterSlotPrefab);
+            var slot = retval.GetComponent<CharacterSlot>();
+            slot.ShowCharacter(mobType);
             retval.transform.parent = spriteParent.transform;
+
+            actorToCharacterSlot[actor] = slot;
             return retval;
         }
         foreach(var player in game.players)
         {
-            var playerObj = createSprite(assets.PlayerSprite);
+            var playerObj = createSlot(player, Game.ActorAlignment.Player);
             playerObj.transform.position = new Vector2(xPlayers, yStart);
             yStart += ySpacing;
         }
         yStart = -(game.mobs.Count * ySpacing) / 2;
-        foreach(var player in game.players)
+        foreach(var mob in game.mobs)
         {
-            var playerObj = createSprite(assets.MobSprite);
+            var playerObj = createSlot(mob, Game.ActorAlignment.Mob);
             playerObj.transform.position = new Vector2(xMobs, yStart);
             yStart += ySpacing;
         }

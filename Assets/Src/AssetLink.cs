@@ -4,6 +4,5 @@ using UnityEngine;
 
 public class AssetLink : MonoBehaviour
 {
-    public GameObject PlayerSprite;
-    public GameObject MobSprite;
+    public GameObject CharacterSlotPrefab;
 }
