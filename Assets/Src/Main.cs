@@ -22,21 +22,21 @@ public class Main : MonoBehaviour
 
         GameEvents.Instance.AttackEnd += (g, a, b) =>
         {
-            Debug.LogFormat("{0} {1}/{2} attacked {3} {4}/{5}", a.name, a.Health, a.baseHealth, b.name, b.Health, b.baseHealth);
+            Debug.Log($"{a.name} {a.Health}/{a.baseHealth} attacked {b.name} {b.Health}/{b.baseHealth}");
         };
         GameEvents.Instance.Death += (g, a) =>
         {
-            Debug.LogFormat("RIP {0}", a.name);
+            Debug.Log($"RIP {a.name}");
         };
         while(game.GameProgress == Game.Progress.InProgress)
         {
             game.DoTurn();
         }
-        Debug.LogFormat("game ended with {0}", game.GameProgress);
+        Debug.Log($"game ended with {game.GameProgress}");
     }
     public void RunAnimatedTest()
     {
-        StartCoroutine(AnimateTest());
+        StartCoroutine(AnimateGame());
     }
     bool waitingToProceed = false;
     public void SetWaiting(bool waiting = true)
@@ -44,7 +44,7 @@ public class Main : MonoBehaviour
         waitingToProceed = waiting;
         proceedButton.interactable = waiting;
     }
-    IEnumerator AnimateTest()
+    IEnumerator AnimateGame()
     {
         runAnimatedTestButton.interactable = false;
 
@@ -65,9 +65,9 @@ public class Main : MonoBehaviour
         {
             animationList.Add(AnimateTargetChoice(a));
         };
-        GameEvents.Instance.AttackEnd += (g, a, b) =>
+        GameEvents.Instance.AttackStart += (g, a, b) =>
         {
-            animationList.Add(AnimateAttack(a.name));
+            animationList.Add(AnimateAttack(a, b));
         };
         GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
         {
@@ -88,7 +88,7 @@ public class Main : MonoBehaviour
             yield return new WaitUntil(() => !waitingToProceed);
             SetWaiting(false);
         }
-        Debug.LogFormat("game ended with {0}", game.GameProgress);
+        Debug.Log($"game ended with {game.GameProgress}");
 
         GameEvents.ReleaseAllListeners();
 
@@ -122,22 +122,23 @@ public class Main : MonoBehaviour
         }
         yield return new WaitForSeconds(animationTime);
     }
-    IEnumerator AnimateAttack(string name)
+    IEnumerator AnimateAttack(GameActor attacker, GameActor defender)
     {
-        Debug.LogFormat("Attack of {0}", name);
-        yield return new WaitForSeconds(animationTime);
-    }
-    IEnumerator AnimateDeath(string name)
-    {
-        Debug.LogFormat("Death of {0}", name);
+        Debug.Log($"{attacker.name} ATTACKING {defender.name} for {attacker.Weapon.damage}");
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateHealthChange(GameActor actor, float oldHealth)
     {
+        Debug.Log($"{actor.name} health {oldHealth} => {actor.Health}");
         var slot = actorToCharacterSlot[actor];
         slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
 
-        yield return null;
+        yield return new WaitForSeconds(animationTime);
+    }
+    IEnumerator AnimateDeath(string name)
+    {
+        Debug.Log($"Death of {name}");
+        yield return new WaitForSeconds(animationTime);
     }
     readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     void RenderGame(Game game)
@@ -150,7 +151,7 @@ public class Main : MonoBehaviour
         const float xMobs = 3;
         const float ySpacing = 3;
 
-        float yStart = 1-(game.players.Count * ySpacing) / 2;
+        float yStart = 1.5f-(game.players.Count * ySpacing) / 2;
         GameObject createSlot(GameActor actor, Game.ActorAlignment mobType, float x, float y)
         {
             var retval = Instantiate(assets.CharacterSlotPrefab);
@@ -170,7 +171,7 @@ public class Main : MonoBehaviour
             var slot = createSlot(player, Game.ActorAlignment.Player, xPlayers, yStart);
             yStart += ySpacing;
         }
-        yStart = 1-(game.mobs.Count * ySpacing) / 2;
+        yStart = 1.5f-(game.mobs.Count * ySpacing) / 2;
         foreach(var mob in game.mobs)
         {
             var slot = createSlot(mob, Game.ActorAlignment.Mob, xMobs, yStart);
