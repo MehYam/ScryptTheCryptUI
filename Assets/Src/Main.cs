@@ -6,17 +6,32 @@ using ScryptTheCrypt;
 
 public class Main : MonoBehaviour
 {
-    [SerializeField] private UnityEngine.UI.Button runAnimatedTestButton = null;
     [SerializeField] private UnityEngine.UI.Button runSmokeTestButton = null;
+    [SerializeField] private UnityEngine.UI.Button runAnimatedTestButton = null;
+    [SerializeField] private UnityEngine.UI.Button runEnumeratedTestButton = null;
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject spriteParent = null;
     private void Start()
     {
-        runAnimatedTestButton.interactable = true;
-        runSmokeTestButton.interactable = true;
+        TestRunning = false;
+    }
+    private bool TestRunning
+    {
+        get
+        {
+            return !runSmokeTestButton.interactable;
+        }
+        set
+        {
+            runSmokeTestButton.interactable = !value;
+            runAnimatedTestButton.interactable = !value;
+            runEnumeratedTestButton.interactable = !value;
+        }
     }
     public void RunSmokeTest()
     {
+        TestRunning = true;
+
         var game = Util.SampleGame;
         RenderGame(game);
 
@@ -33,10 +48,16 @@ public class Main : MonoBehaviour
             game.DoTurn();
         }
         Debug.Log($"game ended with {game.GameProgress}");
+
+        TestRunning = false;
     }
     public void RunAnimatedTest()
     {
         StartCoroutine(AnimateGame());
+    }
+    public void RunEnumeratedTest()
+    {
+        StartCoroutine(AnimateEnumeratedGame());
     }
     bool waitingToProceed = false;
     public void SetWaiting(bool waiting = true)
@@ -46,8 +67,7 @@ public class Main : MonoBehaviour
     }
     IEnumerator AnimateGame()
     {
-        runAnimatedTestButton.interactable = false;
-
+        TestRunning = true;
         var animationList = new List<IEnumerator>();
 
         var game = Util.GetSampleGame(1000, 6);
@@ -91,8 +111,29 @@ public class Main : MonoBehaviour
         Debug.Log($"game ended with {game.GameProgress}");
 
         GameEvents.ReleaseAllListeners();
+        TestRunning = false;
+    }
+    IEnumerator AnimateEnumeratedGame()
+    {
+        TestRunning = true;
+        var game = Util.GetSampleGame(1000, 6);
+        RenderGame(game);
 
-        runAnimatedTestButton.interactable = true;
+        GameEvents.Instance.TurnStart += g =>
+        {
+            Debug.Log("start of turn");
+        };
+        while(game.GameProgress == Game.Progress.InProgress)
+        {
+            var turns = game.EnumerateTurns();
+            while (turns.MoveNext())
+            {
+                yield return new WaitForEndOfFrame();
+            }
+        }
+        Debug.Log($"game ended with {game.GameProgress}");
+        GameEvents.ReleaseAllListeners();
+        TestRunning = false;
     }
     const float animationTime = 1;
     IEnumerator AnimateActorActionsStart(GameActor actor)
