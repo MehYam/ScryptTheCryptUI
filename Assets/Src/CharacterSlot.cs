@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 using ScryptTheCrypt;
 
@@ -9,13 +10,22 @@ public class CharacterSlot : MonoBehaviour
     [SerializeField] private GameObject TurnIndicator = null;
     [SerializeField] private GameObject TargetIndicator = null;
     [SerializeField] private GameObject DeathIndicator = null;
+    [SerializeField] private GameObject DamageText = null;
     [SerializeField] private GameObject CallToAttentionIndicator = null;
     [SerializeField] private GameObject Floor = null;
     [SerializeField] private GameObject NameplateUI = null;
 
-    private void Start()
+    GameObject UIParent = null;
+    static private Vector2 WorldToScreenPoint(Vector2 pos)
+    {
+        return RectTransformUtility.WorldToScreenPoint(Camera.main, pos);
+    }
+    void Awake()
     {
         gameObject.layer = LayerMask.NameToLayer("CharacterLayer");
+        UIParent = GameObject.Find("UI");
+
+        Debug.Assert(UIParent != null, "couldn't find UI parent");
     }
     public GameObject Character { get; private set; }
     public void ShowCharacter(Game.ActorAlignment charType)
@@ -35,11 +45,9 @@ public class CharacterSlot : MonoBehaviour
 
         GameObject nameplateGO = Instantiate(NameplateUI);
         Nameplate = nameplateGO.GetComponent<Nameplate>();
-
-        var UIParent = GameObject.Find("UI");
         Nameplate.transform.SetParent(UIParent.transform, false);
 
-        var screen = RectTransformUtility.WorldToScreenPoint(Camera.main, transform.position);
+        var screen = WorldToScreenPoint(transform.position);
         screen.y -= 65;
         Nameplate.transform.position = screen;
     }
@@ -71,5 +79,13 @@ public class CharacterSlot : MonoBehaviour
     public void ToggleDeathIndicator(bool show)
     {
         ToggleIndicator(show, transform, DeathIndicator, ref deathIndicator);
+    }
+    public void ShowDamageText(string damageText)
+    {
+        GameObject obj = Instantiate(DamageText);
+        obj.transform.SetParent(UIParent.transform, false);
+        obj.transform.position = WorldToScreenPoint(transform.position);
+
+        obj.GetComponentInChildren<Text>().text = damageText;
     }
 }

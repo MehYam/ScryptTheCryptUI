@@ -11,7 +11,7 @@ public class Main : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button runEnumeratedTestButton = null;
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject spriteParent = null;
-    private void Start()
+    void Start()
     {
         TestRunning = false;
     }
@@ -237,6 +237,8 @@ public class Main : MonoBehaviour
         GameEvents.Instance.AttackStart += (g, a, b) =>
         {
             Debug.Log($"{a.name} attacks {b.name}");
+            var slot = actorToCharacterSlot[b];
+            slot.ShowDamageText(a.Weapon.damage.ToString());
         };
         GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
         {
