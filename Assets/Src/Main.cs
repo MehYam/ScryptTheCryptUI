@@ -123,6 +123,34 @@ public class Main : MonoBehaviour
         {
             Debug.Log("start of turn");
         };
+        GameEvents.Instance.ActorActionsStart += (g, a) =>
+        {
+            var slot = actorToCharacterSlot[a];
+            slot.ShowTurnIndicator(true);
+        };
+        GameEvents.Instance.ActorActionsEnd += (g, a) =>
+        {
+            var slot = actorToCharacterSlot[a];
+            slot.ShowTurnIndicator(false);
+        };
+        GameEvents.Instance.TargetChosen += (g, a) =>
+        {
+            AnimateTargetChoice(a);
+        };
+        GameEvents.Instance.AttackStart += (g, a, b) =>
+        {
+            AnimateAttack(a, b);
+        };
+        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
+        {
+            var slot = actorToCharacterSlot[a];
+            slot.Nameplate.HealthBar.Percent = a.Health / a.baseHealth;
+        };
+        GameEvents.Instance.Death += (g, a) =>
+        {
+            AnimateDeath(a.name);
+        };
+
         while(game.GameProgress == Game.Progress.InProgress)
         {
             var turns = game.EnumerateTurns();
@@ -132,6 +160,8 @@ public class Main : MonoBehaviour
             }
         }
         Debug.Log($"game ended with {game.GameProgress}");
+        Debug.Log(game.ToString());
+
         GameEvents.ReleaseAllListeners();
         TestRunning = false;
     }
