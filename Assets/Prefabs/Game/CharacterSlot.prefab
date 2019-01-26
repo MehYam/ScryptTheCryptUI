@@ -52,6 +52,8 @@ MonoBehaviour:
     type: 3}
   TargetIndicator: {fileID: 2358984449042867086, guid: 4789454ebc4a5f344aa756fe9bc28062,
     type: 3}
+  DeathIndicator: {fileID: 2996345532474287071, guid: bbea719e3b9dfc4469e6329cc46a5f67,
+    type: 3}
   CallToAttentionIndicator: {fileID: 6528129649715458515, guid: 6b1c698fa080f9d43940854d97ef68d5,
     type: 3}
   Floor: {fileID: 8723777154146034900}

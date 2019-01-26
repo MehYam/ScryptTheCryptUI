@@ -4,14 +4,14 @@ using ScryptTheCrypt;
 
 public class CharacterSlot : MonoBehaviour
 {
-    #pragma warning disable 0649 // A fix to Unity is in the works: https://github.com/dotnet/roslyn/issues/30172
-    [SerializeField] GameObject PlayerSprite;
-    [SerializeField] GameObject MobSprite;
-    [SerializeField] GameObject TurnIndicator;
-    [SerializeField] GameObject TargetIndicator;
-    [SerializeField] GameObject CallToAttentionIndicator;
-    [SerializeField] GameObject Floor;
-    [SerializeField] GameObject NameplateUI;
+    [SerializeField] private GameObject PlayerSprite = null;
+    [SerializeField] private GameObject MobSprite = null;
+    [SerializeField] private GameObject TurnIndicator = null;
+    [SerializeField] private GameObject TargetIndicator = null;
+    [SerializeField] private GameObject DeathIndicator = null;
+    [SerializeField] private GameObject CallToAttentionIndicator = null;
+    [SerializeField] private GameObject Floor = null;
+    [SerializeField] private GameObject NameplateUI = null;
 
     private void Start()
     {
@@ -43,32 +43,33 @@ public class CharacterSlot : MonoBehaviour
         screen.y -= 65;
         Nameplate.transform.position = screen;
     }
-    private GameObject turnIndicator;
-    public void ShowTurnIndicator(bool show)
+    private void ToggleIndicator(bool show, Transform parent, GameObject prefab, ref GameObject existing)
     {
-        if (show && turnIndicator == null)
+        if (show && existing == null)
         {
-            turnIndicator = Instantiate(TurnIndicator);
-            turnIndicator.transform.SetParent(Floor.transform, false);
-            turnIndicator.transform.localPosition = Vector2.zero;
+            existing = Instantiate(prefab);
+            existing.transform.SetParent(parent, false);
+            existing.transform.localPosition = Vector2.zero;
         }
-        else if (!show && turnIndicator != null)
+        else if (!show && existing != null)
         {
-            Destroy(turnIndicator.gameObject);
+            Destroy(existing.gameObject);
+            existing = null;
         }
     }
-    private GameObject targetIndicator;
-    public void ShowTargetIndicator(bool show)
+    private GameObject turnIndicator;
+    public void ToggleTurnIndicator(bool show)
     {
-        if (show && targetIndicator == null)
-        {
-            targetIndicator = Instantiate(TargetIndicator);
-            targetIndicator.transform.SetParent(Floor.transform, false);
-            targetIndicator.transform.localPosition = Vector2.zero;
-        }
-        else if (!show && targetIndicator != null)
-        {
-            Destroy(targetIndicator.gameObject);
-        }
+        ToggleIndicator(show, Floor.transform, TurnIndicator, ref turnIndicator);
+    }
+    private GameObject targetIndicator;
+    public void ToggleTargetIndicator(bool show)
+    {
+        ToggleIndicator(show, Floor.transform, TargetIndicator, ref targetIndicator);
+    }
+    private GameObject deathIndicator;
+    public void ToggleDeathIndicator(bool show)
+    {
+        ToggleIndicator(show, transform, DeathIndicator, ref deathIndicator);
     }
 }

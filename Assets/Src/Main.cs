@@ -59,6 +59,45 @@ public class Main : MonoBehaviour
     {
         StartCoroutine(AnimateEnumeratedGame());
     }
+    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
+    void RenderGame(Game game)
+    {
+        var assets = GetComponent<AssetLink>();
+
+        actorToCharacterSlot.Clear();
+
+        const float xPlayers = -3;
+        const float xMobs = 3;
+        const float ySpacing = 3;
+
+        float yStart = 1.5f-(game.players.Count * ySpacing) / 2;
+        GameObject createSlot(GameActor actor, Game.ActorAlignment alignment, float x, float y)
+        {
+            var retval = Instantiate(assets.CharacterSlotPrefab);
+            var slot = retval.GetComponent<CharacterSlot>();
+            slot.transform.position = new Vector2(x, y);
+
+            slot.ShowCharacter(alignment);
+            slot.ShowNameplate();
+            slot.Nameplate.Name.text = actor.name;
+            slot.name = $"slot {actor.name} ({alignment})";
+            retval.transform.parent = spriteParent.transform;
+
+            actorToCharacterSlot[actor] = slot;
+            return retval;
+        }
+        foreach(var player in game.players)
+        {
+            var slot = createSlot(player, Game.ActorAlignment.Player, xPlayers, yStart);
+            yStart += ySpacing;
+        }
+        yStart = 1.5f-(game.mobs.Count * ySpacing) / 2;
+        foreach(var mob in game.mobs)
+        {
+            var slot = createSlot(mob, Game.ActorAlignment.Mob, xMobs, yStart);
+            yStart += ySpacing;
+        }
+    }
     bool waitingToProceed = false;
     public void SetWaiting(bool waiting = true)
     {
@@ -113,74 +152,22 @@ public class Main : MonoBehaviour
         GameEvents.ReleaseAllListeners();
         TestRunning = false;
     }
-    IEnumerator AnimateEnumeratedGame()
-    {
-        TestRunning = true;
-        var game = Util.GetSampleGame(1000, 6);
-        RenderGame(game);
-
-        GameEvents.Instance.TurnStart += g =>
-        {
-            Debug.Log("start of turn");
-        };
-        GameEvents.Instance.ActorActionsStart += (g, a) =>
-        {
-            var slot = actorToCharacterSlot[a];
-            slot.ShowTurnIndicator(true);
-        };
-        GameEvents.Instance.ActorActionsEnd += (g, a) =>
-        {
-            var slot = actorToCharacterSlot[a];
-            slot.ShowTurnIndicator(false);
-        };
-        GameEvents.Instance.TargetChosen += (g, a) =>
-        {
-            AnimateTargetChoice(a);
-        };
-        GameEvents.Instance.AttackStart += (g, a, b) =>
-        {
-            AnimateAttack(a, b);
-        };
-        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
-        {
-            var slot = actorToCharacterSlot[a];
-            slot.Nameplate.HealthBar.Percent = a.Health / a.baseHealth;
-        };
-        GameEvents.Instance.Death += (g, a) =>
-        {
-            AnimateDeath(a.name);
-        };
-
-        while(game.GameProgress == Game.Progress.InProgress)
-        {
-            var turns = game.EnumerateTurns();
-            while (turns.MoveNext())
-            {
-                yield return new WaitForEndOfFrame();
-            }
-        }
-        Debug.Log($"game ended with {game.GameProgress}");
-        Debug.Log(game.ToString());
-
-        GameEvents.ReleaseAllListeners();
-        TestRunning = false;
-    }
     const float animationTime = 1;
     IEnumerator AnimateActorActionsStart(GameActor actor)
     {
         var slot = actorToCharacterSlot[actor];
-        slot.ShowTurnIndicator(true);
+        slot.ToggleTurnIndicator(true);
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateActorActionsEnd(GameActor actor)
     {
         var slot = actorToCharacterSlot[actor];
-        slot.ShowTurnIndicator(false);
+        slot.ToggleTurnIndicator(false);
 
         if (actor.GetAttribute(GameActor.Attribute.Target) is GameActor target)
         {
             var targetSlot = actorToCharacterSlot[target];
-            targetSlot.ShowTargetIndicator(false);
+            targetSlot.ToggleTargetIndicator(false);
         }
 
         yield return new WaitForSeconds(animationTime);
@@ -189,7 +176,7 @@ public class Main : MonoBehaviour
     {
         if (actor.GetAttribute(GameActor.Attribute.Target) is GameActor target) {
             var slot = actorToCharacterSlot[target];
-            slot.ShowTargetIndicator(true);
+            slot.ToggleTargetIndicator(true);
         }
         yield return new WaitForSeconds(animationTime);
     }
@@ -211,42 +198,72 @@ public class Main : MonoBehaviour
         Debug.Log($"Death of {name}");
         yield return new WaitForSeconds(animationTime);
     }
-    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
-    void RenderGame(Game game)
+    IEnumerator AnimateEnumeratedGame()
     {
-        var assets = GetComponent<AssetLink>();
+        TestRunning = true;
+        var game = Util.GetSampleGame(1000, 6);
+        RenderGame(game);
 
-        actorToCharacterSlot.Clear();
-
-        const float xPlayers = -3;
-        const float xMobs = 3;
-        const float ySpacing = 3;
-
-        float yStart = 1.5f-(game.players.Count * ySpacing) / 2;
-        GameObject createSlot(GameActor actor, Game.ActorAlignment mobType, float x, float y)
+        GameEvents.Instance.TurnStart += g =>
         {
-            var retval = Instantiate(assets.CharacterSlotPrefab);
-            var slot = retval.GetComponent<CharacterSlot>();
-            slot.transform.position = new Vector2(x, y);
-
-            slot.ShowCharacter(mobType);
-            slot.ShowNameplate();
-            slot.Nameplate.Name.text = actor.name;
-            retval.transform.parent = spriteParent.transform;
-
-            actorToCharacterSlot[actor] = slot;
-            return retval;
-        }
-        foreach(var player in game.players)
+            Debug.Log("start of turn");
+        };
+        GameEvents.Instance.ActorActionsStart += (g, a) =>
         {
-            var slot = createSlot(player, Game.ActorAlignment.Player, xPlayers, yStart);
-            yStart += ySpacing;
-        }
-        yStart = 1.5f-(game.mobs.Count * ySpacing) / 2;
-        foreach(var mob in game.mobs)
+            Debug.Log($"{a.name} starts");
+            var slot = actorToCharacterSlot[a];
+            slot.ToggleTurnIndicator(true);
+        };
+        GameEvents.Instance.ActorActionsEnd += (g, a) =>
         {
-            var slot = createSlot(mob, Game.ActorAlignment.Mob, xMobs, yStart);
-            yStart += ySpacing;
+            Debug.Log($"{a.name} ends");
+            var slot = actorToCharacterSlot[a];
+            slot.ToggleTurnIndicator(false);
+
+            if (a.GetAttribute(GameActor.Attribute.Target) is GameActor target)
+            {
+                var targetSlot = actorToCharacterSlot[target];
+                targetSlot.ToggleTargetIndicator(false);
+            }
+        };
+        GameEvents.Instance.TargetChosen += (g, a) =>
+        {
+            Debug.Log($"{a.name} chooses target {a.GetAttribute(GameActor.Attribute.Target)}");
+            if (a.GetAttribute(GameActor.Attribute.Target) is GameActor target) {
+                var slot = actorToCharacterSlot[target];
+                slot.ToggleTargetIndicator(true);
+            }
+        };
+        GameEvents.Instance.AttackStart += (g, a, b) =>
+        {
+            Debug.Log($"{a.name} attacks {b.name}");
+        };
+        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
+        {
+            Debug.Log($"{a.name} health {oldHealth} => {newHealth}");
+            var slot = actorToCharacterSlot[a];
+            slot.Nameplate.HealthBar.Percent = a.Health / a.baseHealth;
+        };
+        GameEvents.Instance.Death += (g, a) =>
+        {
+            Debug.Log($"RIP {a.name}");
+            var slot = actorToCharacterSlot[a];
+            slot.ToggleDeathIndicator(true);
+        };
+
+        while(game.GameProgress == Game.Progress.InProgress)
+        {
+            var actions = game.EnumerateTurnActions();
+            while (actions.MoveNext())
+            {
+                SetWaiting();
+                yield return new WaitUntil(() => !waitingToProceed);
+            }
         }
+        Debug.Log($"game ended with {game.GameProgress}");
+        Debug.Log(game.ToString());
+
+        GameEvents.ReleaseAllListeners();
+        TestRunning = false;
     }
 }
