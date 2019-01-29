@@ -32,7 +32,7 @@ public class Main : MonoBehaviour
     {
         TestRunning = true;
 
-        var game = Util.SampleGame;
+        var game = Util.SampleBattle;
         RenderGame(game);
 
         GameEvents.Instance.AttackEnd += (g, a, b) =>
@@ -43,7 +43,7 @@ public class Main : MonoBehaviour
         {
             Debug.Log($"RIP {a.name}");
         };
-        while(game.GameProgress == Game.Progress.InProgress)
+        while(game.GameProgress == GameBattle.Progress.InProgress)
         {
             game.DoTurn();
         }
@@ -60,7 +60,7 @@ public class Main : MonoBehaviour
         StartCoroutine(AnimateEnumeratedGame());
     }
     readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
-    void RenderGame(Game game)
+    void RenderGame(GameBattle game)
     {
         var assets = GetComponent<AssetLink>();
 
@@ -71,7 +71,7 @@ public class Main : MonoBehaviour
         const float ySpacing = 3;
 
         float yStart = 1.5f-(game.players.Count * ySpacing) / 2;
-        GameObject createSlot(GameActor actor, Game.ActorAlignment alignment, float x, float y)
+        GameObject createSlot(GameActor actor, GameBattle.ActorAlignment alignment, float x, float y)
         {
             var retval = Instantiate(assets.CharacterSlotPrefab);
             var slot = retval.GetComponent<CharacterSlot>();
@@ -88,13 +88,13 @@ public class Main : MonoBehaviour
         }
         foreach(var player in game.players)
         {
-            var slot = createSlot(player, Game.ActorAlignment.Player, xPlayers, yStart);
+            var slot = createSlot(player, GameBattle.ActorAlignment.Player, xPlayers, yStart);
             yStart += ySpacing;
         }
         yStart = 1.5f-(game.mobs.Count * ySpacing) / 2;
         foreach(var mob in game.mobs)
         {
-            var slot = createSlot(mob, Game.ActorAlignment.Mob, xMobs, yStart);
+            var slot = createSlot(mob, GameBattle.ActorAlignment.Mob, xMobs, yStart);
             yStart += ySpacing;
         }
     }
@@ -109,7 +109,7 @@ public class Main : MonoBehaviour
         TestRunning = true;
         var animationList = new List<IEnumerator>();
 
-        var game = Util.GetSampleGame(1000, 6);
+        var game = Util.GetSampleBattle(1000, 6);
         RenderGame(game);
 
         GameEvents.Instance.ActorActionsStart += (g, a) =>
@@ -136,7 +136,7 @@ public class Main : MonoBehaviour
         {
             animationList.Add(AnimateDeath(a.name));
         };
-        while(game.GameProgress == Game.Progress.InProgress)
+        while(game.GameProgress == GameBattle.Progress.InProgress)
         {
             Debug.Log(game.ToString());
             game.DoTurn();
@@ -201,7 +201,7 @@ public class Main : MonoBehaviour
     IEnumerator AnimateEnumeratedGame()
     {
         TestRunning = true;
-        var game = Util.GetSampleGame(1000, 6);
+        var game = Util.GetSampleBattle(1000, 6);
         RenderGame(game);
 
         GameEvents.Instance.TurnStart += g =>
@@ -253,7 +253,7 @@ public class Main : MonoBehaviour
             slot.ToggleDeathIndicator(true);
         };
 
-        while(game.GameProgress == Game.Progress.InProgress)
+        while(game.GameProgress == GameBattle.Progress.InProgress)
         {
             var actions = game.EnumerateTurnActions();
             while (actions.MoveNext())

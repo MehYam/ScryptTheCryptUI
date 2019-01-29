@@ -28,11 +28,11 @@ public class CharacterSlot : MonoBehaviour
         Debug.Assert(UIParent != null, "couldn't find UI parent");
     }
     public GameObject Character { get; private set; }
-    public void ShowCharacter(Game.ActorAlignment charType)
+    public void ShowCharacter(GameBattle.ActorAlignment charType)
     {
         Debug.Assert(Character == null, "showing already shown character");
 
-        var prefab = charType == Game.ActorAlignment.Player ? PlayerSprite : MobSprite;
+        var prefab = charType == GameBattle.ActorAlignment.Player ? PlayerSprite : MobSprite;
         Character = Instantiate(prefab);
 
         Character.transform.SetParent(transform, false);

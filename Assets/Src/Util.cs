@@ -56,22 +56,22 @@ public static class Util
         new GameWeapon("long shiv", 10),
         new GameWeapon("monkey bite", 18)
     };
-    static public Game SampleGame
+    static public GameBattle SampleBattle
     {
         get
         {
             // run some simple tests to create and invoke a Game
-            var game = new Game(2112);
+            var game = new GameBattle(2112);
             var player = new GameActor("alice");
             var player2 = new GameActor("bob");
             var mob = new GameActor("carly");
             var mob2 = new GameActor("denise");
 
             // set targeting and affinities
-            player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            player2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            mob.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
-            mob2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+            player.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
+            player2.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
+            mob.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
+            mob2.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
 
             player.AddAction(new ActionAttack());
             player2.AddAction(new ActionAttack());
@@ -91,9 +91,9 @@ public static class Util
             return game;
         }
     }
-    static public Game GetSampleGame(int seed, int nActors)
+    static public GameBattle GetSampleBattle(int seed, int nActors)
     {
-        var game = new Game(seed);
+        var game = new GameBattle(seed);
         nActors = Mathf.Min(nActors, weapons.Length);
 
         for (var i = 0; i < nActors; ++i)
@@ -101,12 +101,12 @@ public static class Util
             var actor = Util.actors[i];
             if ((i % 2) == 0) // swap between players and mobs
             {
-                actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+                actor.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
                 game.players.Add(actor);
             }
             else
             {
-                actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+                actor.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
                 game.mobs.Add(actor);
             }
             actor.AddAction(new ActionAttack());
