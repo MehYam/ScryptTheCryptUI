@@ -27,6 +27,13 @@ public class CharacterSlot : MonoBehaviour
 
         Debug.Assert(UIParent != null, "couldn't find UI parent");
     }
+    private void OnDestroy()
+    {
+        if (Nameplate != null)
+        {
+            GameObject.Destroy(Nameplate.gameObject);
+        }
+    }
     public GameObject Character { get; private set; }
     public void ShowCharacter(Game.ActorAlignment charType)
     {

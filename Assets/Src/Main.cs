@@ -13,6 +13,7 @@ public class Main : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject playerParent = null;
     [SerializeField] private GameObject mobParent = null;
+    [SerializeField] private uint mobsPerWave = 4;
     void Start()
     {
         TestRunning = false;
@@ -224,12 +225,18 @@ public class Main : MonoBehaviour
         {
             // start a new wave
             game.ClearActors(Game.ActorAlignment.Mob);  // have to do this manually for now - maybe move this to Game
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < mobsPerWave; ++i)
             {
                 game.AddActor(mobGen.Gen(true), Game.ActorAlignment.Mob);
             }
 
+            Debug.Log($"=-=-=-=-starting new wave {actorToCharacterSlot.Values.Count}");
             // for simplicity, ditch and re-render everything
+            foreach (var slot in actorToCharacterSlot.Values)
+            {
+                Debug.Log($"Destroying {slot.gameObject.name}");
+                GameObject.Destroy(slot.gameObject);
+            }
             actorToCharacterSlot.Clear();
             RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
             RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
@@ -243,6 +250,7 @@ public class Main : MonoBehaviour
                     yield return new WaitUntil(() => !waitingToProceed);
                 }
             }
+            Debug.Log($"round ended with {game.GameProgress}");
         }
         Debug.Log($"game ended with {game.GameProgress}");
         Debug.Log(game.ToString());
@@ -253,8 +261,6 @@ public class Main : MonoBehaviour
     readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     void RenderActors(IList<GameActor> actors, Game.ActorAlignment alignment, GameObject parent)
     {
-        Util.DestroyAllChildren(parent.transform);
-
         var rect = Util.GetScreenRectInWorldCoords();
         Debug.Log($"screen rect {rect}");
 
@@ -268,12 +274,14 @@ public class Main : MonoBehaviour
             var slot = retval.GetComponent<CharacterSlot>();
             slot.transform.position = new Vector2(x, y);
 
-            Debug.Log($"rendering slot at {slot.transform.position}");
-
             slot.ShowCharacter(alignment);
             slot.ShowNameplate();
             slot.Nameplate.Name.text = actor.name;
-            slot.name = $"slot {actor.uniqueName} ({alignment})";
+            slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
+
+            var id = $"{actor.uniqueName} ({alignment})";
+            slot.name = $"slot {id}";
+            slot.Nameplate.name = id;
             retval.transform.parent = parent.transform;
 
             Debug.Assert(!actorToCharacterSlot.ContainsKey(actor));
