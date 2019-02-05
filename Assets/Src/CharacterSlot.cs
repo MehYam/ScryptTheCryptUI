@@ -28,11 +28,11 @@ public class CharacterSlot : MonoBehaviour
         Debug.Assert(UIParent != null, "couldn't find UI parent");
     }
     public GameObject Character { get; private set; }
-    public void ShowCharacter(GameBattle.ActorAlignment charType)
+    public void ShowCharacter(Game.ActorAlignment charType)
     {
         Debug.Assert(Character == null, "showing already shown character");
 
-        var prefab = charType == GameBattle.ActorAlignment.Player ? PlayerSprite : MobSprite;
+        var prefab = charType == Game.ActorAlignment.Player ? PlayerSprite : MobSprite;
         Character = Instantiate(prefab);
 
         Character.transform.SetParent(transform, false);
@@ -48,7 +48,7 @@ public class CharacterSlot : MonoBehaviour
         Nameplate.transform.SetParent(UIParent.transform, false);
 
         var screen = WorldToScreenPoint(transform.position);
-        screen.y -= 65;
+        screen.y -= 12;
         Nameplate.transform.position = screen;
     }
     private void ToggleIndicator(bool show, Transform parent, GameObject prefab, ref GameObject existing)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using kaiGameUtil;
 using ScryptTheCrypt;
 
 public class Main : MonoBehaviour
@@ -10,7 +11,8 @@ public class Main : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button runAnimatedTestButton = null;
     [SerializeField] private UnityEngine.UI.Button runEnumeratedTestButton = null;
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
-    [SerializeField] private GameObject spriteParent = null;
+    [SerializeField] private GameObject playerParent = null;
+    [SerializeField] private GameObject mobParent = null;
     void Start()
     {
         TestRunning = false;
@@ -33,19 +35,20 @@ public class Main : MonoBehaviour
         TestRunning = true;
 
         var game = Util.SampleBattle;
-        RenderGame(game);
+        RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
+        RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
 
         GameEvents.Instance.AttackEnd += (g, a, b) =>
         {
-            Debug.Log($"{a.name} {a.Health}/{a.baseHealth} attacked {b.name} {b.Health}/{b.baseHealth}");
+            Debug.Log($"{a.uniqueName} {a.Health}/{a.baseHealth} attacked {b.uniqueName} {b.Health}/{b.baseHealth}");
         };
         GameEvents.Instance.Death += (g, a) =>
         {
-            Debug.Log($"RIP {a.name}");
+            Debug.Log($"RIP {a.uniqueName}");
         };
-        while(game.GameProgress == GameBattle.Progress.InProgress)
+        while(game.GameProgress == Game.Progress.InProgress)
         {
-            game.DoTurn();
+            game.PlayRound();
         }
         Debug.Log($"game ended with {game.GameProgress}");
 
@@ -59,45 +62,6 @@ public class Main : MonoBehaviour
     {
         StartCoroutine(AnimateEnumeratedGame());
     }
-    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
-    void RenderGame(GameBattle game)
-    {
-        var assets = GetComponent<AssetLink>();
-
-        actorToCharacterSlot.Clear();
-
-        const float xPlayers = -3;
-        const float xMobs = 3;
-        const float ySpacing = 3;
-
-        float yStart = 1.5f-(game.players.Count * ySpacing) / 2;
-        GameObject createSlot(GameActor actor, GameBattle.ActorAlignment alignment, float x, float y)
-        {
-            var retval = Instantiate(assets.CharacterSlotPrefab);
-            var slot = retval.GetComponent<CharacterSlot>();
-            slot.transform.position = new Vector2(x, y);
-
-            slot.ShowCharacter(alignment);
-            slot.ShowNameplate();
-            slot.Nameplate.Name.text = actor.name;
-            slot.name = $"slot {actor.name} ({alignment})";
-            retval.transform.parent = spriteParent.transform;
-
-            actorToCharacterSlot[actor] = slot;
-            return retval;
-        }
-        foreach(var player in game.players)
-        {
-            var slot = createSlot(player, GameBattle.ActorAlignment.Player, xPlayers, yStart);
-            yStart += ySpacing;
-        }
-        yStart = 1.5f-(game.mobs.Count * ySpacing) / 2;
-        foreach(var mob in game.mobs)
-        {
-            var slot = createSlot(mob, GameBattle.ActorAlignment.Mob, xMobs, yStart);
-            yStart += ySpacing;
-        }
-    }
     bool waitingToProceed = false;
     public void SetWaiting(bool waiting = true)
     {
@@ -109,14 +73,16 @@ public class Main : MonoBehaviour
         TestRunning = true;
         var animationList = new List<IEnumerator>();
 
-        var game = Util.GetSampleBattle(1000, 6);
-        RenderGame(game);
+        var rng = new RNG(1000);
+        var game = Util.GetSampleGameWithPlayers(rng, 3);
+        RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
+        RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
 
-        GameEvents.Instance.ActorActionsStart += (g, a) =>
+        GameEvents.Instance.ActorTurnStart += (g, a) =>
         {
             animationList.Add(AnimateActorActionsStart(a));
         };
-        GameEvents.Instance.ActorActionsEnd += (g, a) =>
+        GameEvents.Instance.ActorTurnEnd += (g, a) =>
         {
             animationList.Add(AnimateActorActionsEnd(a));
         };
@@ -134,12 +100,12 @@ public class Main : MonoBehaviour
         };
         GameEvents.Instance.Death += (g, a) =>
         {
-            animationList.Add(AnimateDeath(a.name));
+            animationList.Add(AnimateDeath(a.uniqueName));
         };
-        while(game.GameProgress == GameBattle.Progress.InProgress)
+        while(game.GameProgress == Game.Progress.InProgress)
         {
             Debug.Log(game.ToString());
-            game.DoTurn();
+            game.PlayRound();
 
             yield return StartCoroutine(Util.CoroutineSeries(animationList.GetEnumerator()));
 
@@ -182,12 +148,12 @@ public class Main : MonoBehaviour
     }
     IEnumerator AnimateAttack(GameActor attacker, GameActor defender)
     {
-        Debug.Log($"{attacker.name} ATTACKING {defender.name} for {attacker.Weapon.damage}");
+        Debug.Log($"{attacker.uniqueName} ATTACKING {defender.uniqueName} for {attacker.Weapon.damage}");
         yield return new WaitForSeconds(animationTime);
     }
     IEnumerator AnimateHealthChange(GameActor actor, float oldHealth)
     {
-        Debug.Log($"{actor.name} health {oldHealth} => {actor.Health}");
+        Debug.Log($"{actor.uniqueName} health {oldHealth} => {actor.Health}");
         var slot = actorToCharacterSlot[actor];
         slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
 
@@ -201,22 +167,22 @@ public class Main : MonoBehaviour
     IEnumerator AnimateEnumeratedGame()
     {
         TestRunning = true;
-        var game = Util.GetSampleBattle(1000, 6);
-        RenderGame(game);
+        var rng = new RNG(1000);
+        var game = Util.GetSampleGameWithPlayers(rng, 3);
 
-        GameEvents.Instance.TurnStart += g =>
+        GameEvents.Instance.RoundStart += g =>
         {
             Debug.Log("start of turn");
         };
-        GameEvents.Instance.ActorActionsStart += (g, a) =>
+        GameEvents.Instance.ActorTurnStart += (g, a) =>
         {
-            Debug.Log($"{a.name} starts");
+            Debug.Log($"{a.uniqueName} starts");
             var slot = actorToCharacterSlot[a];
             slot.ToggleTurnIndicator(true);
         };
-        GameEvents.Instance.ActorActionsEnd += (g, a) =>
+        GameEvents.Instance.ActorTurnEnd += (g, a) =>
         {
-            Debug.Log($"{a.name} ends");
+            Debug.Log($"{a.uniqueName} ends");
             var slot = actorToCharacterSlot[a];
             slot.ToggleTurnIndicator(false);
 
@@ -228,7 +194,7 @@ public class Main : MonoBehaviour
         };
         GameEvents.Instance.TargetChosen += (g, a) =>
         {
-            Debug.Log($"{a.name} chooses target {a.GetAttribute(GameActor.Attribute.Target)}");
+            Debug.Log($"{a.uniqueName} chooses target {a.GetAttribute(GameActor.Attribute.Target)}");
             if (a.GetAttribute(GameActor.Attribute.Target) is GameActor target) {
                 var slot = actorToCharacterSlot[target];
                 slot.ToggleTargetIndicator(true);
@@ -236,30 +202,46 @@ public class Main : MonoBehaviour
         };
         GameEvents.Instance.AttackStart += (g, a, b) =>
         {
-            Debug.Log($"{a.name} attacks {b.name}");
+            Debug.Log($"{a.uniqueName} attacks {b.uniqueName}");
             var slot = actorToCharacterSlot[b];
             slot.ShowDamageText(a.Weapon.damage.ToString());
         };
         GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
         {
-            Debug.Log($"{a.name} health {oldHealth} => {newHealth}");
+            Debug.Log($"{a.uniqueName} health {oldHealth} => {newHealth}");
             var slot = actorToCharacterSlot[a];
             slot.Nameplate.HealthBar.Percent = a.Health / a.baseHealth;
         };
         GameEvents.Instance.Death += (g, a) =>
         {
-            Debug.Log($"RIP {a.name}");
+            Debug.Log($"RIP {a.uniqueName}");
             var slot = actorToCharacterSlot[a];
             slot.ToggleDeathIndicator(true);
         };
 
-        while(game.GameProgress == GameBattle.Progress.InProgress)
+        var mobGen = Util.GetMobGenerator(game.rng);
+        while (game.GameProgress != Game.Progress.MobsWin)
         {
-            var actions = game.EnumerateTurnActions();
-            while (actions.MoveNext())
+            // start a new wave
+            game.ClearActors(Game.ActorAlignment.Mob);  // have to do this manually for now - maybe move this to Game
+            for (int i = 0; i < 4; ++i)
             {
-                SetWaiting();
-                yield return new WaitUntil(() => !waitingToProceed);
+                game.AddActor(mobGen.Gen(true), Game.ActorAlignment.Mob);
+            }
+
+            // for simplicity, ditch and re-render everything
+            actorToCharacterSlot.Clear();
+            RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
+            RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
+
+            while (game.GameProgress == Game.Progress.InProgress)
+            {
+                var actions = game.EnumerateRoundActions();
+                while (actions.MoveNext())
+                {
+                    SetWaiting();
+                    yield return new WaitUntil(() => !waitingToProceed);
+                }
             }
         }
         Debug.Log($"game ended with {game.GameProgress}");
@@ -267,5 +249,44 @@ public class Main : MonoBehaviour
 
         GameEvents.ReleaseAllListeners();
         TestRunning = false;
+    }
+    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
+    void RenderActors(IList<GameActor> actors, Game.ActorAlignment alignment, GameObject parent)
+    {
+        Util.DestroyAllChildren(parent.transform);
+
+        var rect = Util.GetScreenRectInWorldCoords();
+        Debug.Log($"screen rect {rect}");
+
+        float ySpacing = rect.height / actors.Count / 2;
+        float x = alignment == Game.ActorAlignment.Player ? -3 : 3;
+
+        var assets = GetComponent<AssetLink>();
+        GameObject createSlot(GameActor actor, float y)
+        {
+            var retval = Instantiate(assets.CharacterSlotPrefab);
+            var slot = retval.GetComponent<CharacterSlot>();
+            slot.transform.position = new Vector2(x, y);
+
+            Debug.Log($"rendering slot at {slot.transform.position}");
+
+            slot.ShowCharacter(alignment);
+            slot.ShowNameplate();
+            slot.Nameplate.Name.text = actor.name;
+            slot.name = $"slot {actor.uniqueName} ({alignment})";
+            retval.transform.parent = parent.transform;
+
+            Debug.Assert(!actorToCharacterSlot.ContainsKey(actor));
+
+            actorToCharacterSlot[actor] = slot;
+            return retval;
+        }
+
+        float yCurrent = rect.center.y + ySpacing * (actors.Count / 2) - 1;
+        foreach(var actor in actors)
+        {
+            var slot = createSlot(actor, yCurrent);
+            yCurrent -= ySpacing;
+        }
     }
 }

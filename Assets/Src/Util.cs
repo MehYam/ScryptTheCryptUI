@@ -1,9 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 using ScryptTheCrypt;
 using ScryptTheCrypt.Actions;
+
+using kaiGameUtil;
 
 public static class Util
 {
@@ -42,36 +44,36 @@ public static class Util
     };
     static GameWeapon[] weapons = new GameWeapon[] 
     {
-        new GameWeapon("axe", 22),
-        new GameWeapon("ballista", 20),
+        new GameWeapon("axe", 5),
+        new GameWeapon("ballista", 6),
         new GameWeapon("cudgel", 9),
         new GameWeapon("dingbat", 10),
         new GameWeapon("electric sword", 15),
         new GameWeapon("fencing sabre", 19),
-        new GameWeapon("gun knife", 30),
-        new GameWeapon("helishears", 31),
-        new GameWeapon("ignition rod", 14),
-        new GameWeapon("jax", 18),
+        new GameWeapon("gun knife", 11),
+        new GameWeapon("helishears", 14),
+        new GameWeapon("ignition rod", 7),
+        new GameWeapon("jax", 9),
         new GameWeapon("kelvin sapper", 11),
         new GameWeapon("long shiv", 10),
         new GameWeapon("monkey bite", 18)
     };
-    static public GameBattle SampleBattle
+    static public Game SampleBattle
     {
         get
         {
             // run some simple tests to create and invoke a Game
-            var game = new GameBattle(2112);
+            var game = new Game(2112);
             var player = new GameActor("alice");
             var player2 = new GameActor("bob");
             var mob = new GameActor("carly");
             var mob2 = new GameActor("denise");
 
             // set targeting and affinities
-            player.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
-            player2.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
-            mob.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
-            mob2.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
+            player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+            player2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+            mob.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+            mob2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
 
             player.AddAction(new ActionAttack());
             player2.AddAction(new ActionAttack());
@@ -83,35 +85,70 @@ public static class Util
             mob.Weapon = new GameWeapon("carly's cutlass", 33);
             mob2.Weapon = new GameWeapon("denise's dog", 5);
 
-            game.players.Add(player);
-            game.players.Add(player2);
-            game.mobs.Add(mob);
-            game.mobs.Add(mob2);
+            game.Players.Add(player);
+            game.Players.Add(player2);
+            game.Mobs.Add(mob);
+            game.Mobs.Add(mob2);
 
             return game;
         }
     }
-    static public GameBattle GetSampleBattle(int seed, int nActors)
+    public class MobGenerator
     {
-        var game = new GameBattle(seed);
-        nActors = Mathf.Min(nActors, weapons.Length);
-
-        for (var i = 0; i < nActors; ++i)
+        private readonly Func<GameActor>[] generators;
+        private readonly RNG rng;
+        public MobGenerator(RNG rng, params Func<GameActor>[] generators)
         {
-            var actor = Util.actors[i];
-            if ((i % 2) == 0) // swap between players and mobs
+            this.rng = rng;
+            this.generators = generators;
+        }
+        public GameActor Gen(bool addDefaultAttack)
+        {
+            var retval = generators[rng.NextIndex(generators)]();
+            if (addDefaultAttack)
             {
-                actor.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Mob));
-                game.players.Add(actor);
+                retval.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
+                retval.AddAction(new ActionAttack());
             }
-            else
-            {
-                actor.AddAction(new ActionChooseRandomTarget(GameBattle.ActorAlignment.Player));
-                game.mobs.Add(actor);
-            }
+            return retval;
+        }
+    }
+    static public Game GetSampleGameWithPlayers(RNG rng, int nPlayers)
+    {
+        var game = new Game(rng);
+        for (var i = 0; i < nPlayers; ++i)
+        {
+            var actor = Util.actors[game.rng.NextIndex(Util.actors)];
+            actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
             actor.AddAction(new ActionAttack());
-            actor.Weapon = Util.weapons[i];
+            actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
+            game.AddActor(actor, Game.ActorAlignment.Player);
         }
         return game;
+    }
+    static public MobGenerator GetMobGenerator(RNG rng)
+    {
+        return new MobGenerator(rng, 
+            () => new GameActor("rat", 10, new GameWeapon("teeth", 4)),
+            () => new GameActor("mole", 8, new GameWeapon("claw", 6)),
+            () => new GameActor("lynx", 15, new GameWeapon("pounce", 10))
+        );
+    }
+    static public Rect GetScreenRectInWorldCoords()
+    {
+        float height = Camera.main.orthographicSize * 2.0f;
+        float width = height * Screen.width / Screen.height;
+
+        var pos = Camera.main.transform.position;
+        pos.x = -width / 2;
+        pos.y = -height / 2;
+        return new Rect(pos, new Vector2(width, height));
+    }
+    static public void DestroyAllChildren(Transform transform)
+    {
+        foreach (Transform child in transform)
+        {
+            GameObject.Destroy(child.gameObject);
+        }
     }
 }

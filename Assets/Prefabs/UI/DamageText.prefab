@@ -113,6 +113,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   additionalSeconds: 0
+  destroyTarget: {fileID: 8413114553353942742}
 --- !u!1 &8413114553353942742
 GameObject:
   m_ObjectHideFlags: 0
@@ -123,7 +124,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4871128040309021855}
   m_Layer: 5
-  m_Name: DamageText 1
+  m_Name: DamageText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
