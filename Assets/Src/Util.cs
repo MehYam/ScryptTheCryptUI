@@ -44,19 +44,19 @@ public static class Util
     };
     static GameWeapon[] weapons = new GameWeapon[] 
     {
-        new GameWeapon("axe", 5),
-        new GameWeapon("ballista", 6),
-        new GameWeapon("cudgel", 9),
-        new GameWeapon("dingbat", 10),
-        new GameWeapon("electric sword", 15),
-        new GameWeapon("fencing sabre", 19),
-        new GameWeapon("gun knife", 11),
-        new GameWeapon("helishears", 14),
+        new GameWeapon("axe", 4),
+        new GameWeapon("ballista", 5),
+        new GameWeapon("cudgel", 6),
+        new GameWeapon("dingbat", 3),
+        new GameWeapon("electric sword", 10),
+        new GameWeapon("fencing sabre", 9),
+        new GameWeapon("gun knife", 4),
+        new GameWeapon("helishears", 8),
         new GameWeapon("ignition rod", 7),
         new GameWeapon("jax", 9),
         new GameWeapon("kelvin sapper", 11),
         new GameWeapon("long shiv", 10),
-        new GameWeapon("monkey bite", 18)
+        new GameWeapon("monkey bite", 2)
     };
     static public Game SampleBattle
     {
@@ -118,7 +118,9 @@ public static class Util
         var game = new Game(rng);
         for (var i = 0; i < nPlayers; ++i)
         {
-            var actor = Util.actors[game.rng.NextIndex(Util.actors)];
+            var actorTemplate = Util.actors[game.rng.NextIndex(Util.actors)];
+            var actor = new GameActor(actorTemplate.name, actorTemplate.baseHealth);
+
             actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
             actor.AddAction(new ActionAttack());
             actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];

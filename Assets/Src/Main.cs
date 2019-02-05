@@ -13,7 +13,11 @@ public class Main : MonoBehaviour
     [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject playerParent = null;
     [SerializeField] private GameObject mobParent = null;
+    [SerializeField] private uint heroes = 4;
     [SerializeField] private uint mobsPerWave = 4;
+    [SerializeField] private int seed = 2112;
+    [SerializeField] private float eventWaitSeconds = 0.5f;
+
     void Start()
     {
         TestRunning = false;
@@ -74,7 +78,7 @@ public class Main : MonoBehaviour
         TestRunning = true;
         var animationList = new List<IEnumerator>();
 
-        var rng = new RNG(1000);
+        var rng = new RNG(seed);
         var game = Util.GetSampleGameWithPlayers(rng, 3);
         RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
         RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
@@ -119,12 +123,11 @@ public class Main : MonoBehaviour
         GameEvents.ReleaseAllListeners();
         TestRunning = false;
     }
-    const float animationTime = 1;
     IEnumerator AnimateActorActionsStart(GameActor actor)
     {
         var slot = actorToCharacterSlot[actor];
         slot.ToggleTurnIndicator(true);
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateActorActionsEnd(GameActor actor)
     {
@@ -137,7 +140,7 @@ public class Main : MonoBehaviour
             targetSlot.ToggleTargetIndicator(false);
         }
 
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateTargetChoice(GameActor actor)
     {
@@ -145,12 +148,12 @@ public class Main : MonoBehaviour
             var slot = actorToCharacterSlot[target];
             slot.ToggleTargetIndicator(true);
         }
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateAttack(GameActor attacker, GameActor defender)
     {
         Debug.Log($"{attacker.uniqueName} ATTACKING {defender.uniqueName} for {attacker.Weapon.damage}");
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateHealthChange(GameActor actor, float oldHealth)
     {
@@ -158,17 +161,17 @@ public class Main : MonoBehaviour
         var slot = actorToCharacterSlot[actor];
         slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
 
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateDeath(string name)
     {
         Debug.Log($"Death of {name}");
-        yield return new WaitForSeconds(animationTime);
+        yield return new WaitForSeconds(eventWaitSeconds);
     }
     IEnumerator AnimateEnumeratedGame()
     {
         TestRunning = true;
-        var rng = new RNG(1000);
+        var rng = new RNG(seed);
         var game = Util.GetSampleGameWithPlayers(rng, 3);
 
         GameEvents.Instance.RoundStart += g =>
@@ -234,7 +237,6 @@ public class Main : MonoBehaviour
             // for simplicity, ditch and re-render everything
             foreach (var slot in actorToCharacterSlot.Values)
             {
-                Debug.Log($"Destroying {slot.gameObject.name}");
                 GameObject.Destroy(slot.gameObject);
             }
             actorToCharacterSlot.Clear();
@@ -246,11 +248,14 @@ public class Main : MonoBehaviour
                 var actions = game.EnumerateRoundActions();
                 while (actions.MoveNext())
                 {
-                    SetWaiting();
-                    yield return new WaitUntil(() => !waitingToProceed);
+                    yield return new WaitForSeconds(eventWaitSeconds);
                 }
             }
             Debug.Log($"round ended with {game.GameProgress}");
+
+            SetWaiting();
+            yield return new WaitUntil(() => !waitingToProceed);
+            SetWaiting(false);
         }
         Debug.Log($"game ended with {game.GameProgress}");
         Debug.Log(game.ToString());
@@ -275,7 +280,7 @@ public class Main : MonoBehaviour
             slot.transform.position = new Vector2(x, y);
 
             slot.ShowCharacter(alignment);
-            slot.ShowNameplate();
+            slot.ShowNameplate(alignment);
             slot.Nameplate.Name.text = actor.name;
             slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
 
@@ -284,13 +289,17 @@ public class Main : MonoBehaviour
             slot.Nameplate.name = id;
             retval.transform.parent = parent.transform;
 
-            Debug.Assert(!actorToCharacterSlot.ContainsKey(actor));
+            if (actorToCharacterSlot.ContainsKey(actor))
+            {
+                Debug.LogError($"{actor.uniqueName} already in actorToCharacterSlot");
+                Debug.Assert(!actorToCharacterSlot.ContainsKey(actor));
+            }
 
             actorToCharacterSlot[actor] = slot;
             return retval;
         }
 
-        float yCurrent = rect.center.y + ySpacing * (actors.Count / 2) - 1;
+        float yCurrent = rect.center.y + ySpacing * (actors.Count / 2);
         foreach(var actor in actors)
         {
             var slot = createSlot(actor, yCurrent);
