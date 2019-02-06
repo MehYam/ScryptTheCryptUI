@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AssetLink : MonoBehaviour
+public class MainAssetLink : MonoBehaviour
 {
     public GameObject CharacterSlotPrefab;
 }

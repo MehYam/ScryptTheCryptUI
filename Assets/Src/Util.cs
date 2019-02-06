@@ -93,6 +93,21 @@ public static class Util
             return game;
         }
     }
+    static public Game GetSampleGameWithPlayers(RNG rng, int nPlayers)
+    {
+        var game = new Game(rng);
+        for (var i = 0; i < nPlayers; ++i)
+        {
+            var actorTemplate = Util.actors[game.rng.NextIndex(Util.actors)];
+            var actor = new GameActor(actorTemplate.name, actorTemplate.baseHealth);
+
+            actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
+            actor.AddAction(new ActionAttack());
+            actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
+            game.AddActor(actor, Game.ActorAlignment.Player);
+        }
+        return game;
+    }
     public class MobGenerator
     {
         private readonly Func<GameActor>[] generators;
@@ -113,27 +128,20 @@ public static class Util
             return retval;
         }
     }
-    static public Game GetSampleGameWithPlayers(RNG rng, int nPlayers)
-    {
-        var game = new Game(rng);
-        for (var i = 0; i < nPlayers; ++i)
-        {
-            var actorTemplate = Util.actors[game.rng.NextIndex(Util.actors)];
-            var actor = new GameActor(actorTemplate.name, actorTemplate.baseHealth);
-
-            actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            actor.AddAction(new ActionAttack());
-            actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
-            game.AddActor(actor, Game.ActorAlignment.Player);
-        }
-        return game;
-    }
     static public MobGenerator GetMobGenerator(RNG rng)
     {
         return new MobGenerator(rng, 
             () => new GameActor("rat", 10, new GameWeapon("teeth", 4)),
             () => new GameActor("mole", 8, new GameWeapon("claw", 6)),
             () => new GameActor("lynx", 15, new GameWeapon("pounce", 10))
+        );
+    }
+    static public MobGenerator GetBossGenerator(RNG rng)
+    {
+        return new MobGenerator(rng,
+            () => new GameActor("rat boss", 30, new GameWeapon("gold teeth", 12)),
+            () => new GameActor("mole captain", 35, new GameWeapon("poison claw", 14)),
+            () => new GameActor("trained lynx", 40, new GameWeapon("swipe", 15))
         );
     }
     static public Rect GetScreenRectInWorldCoords()

@@ -7,32 +7,34 @@ using ScryptTheCrypt;
 
 public class Main : MonoBehaviour
 {
-    [SerializeField] private UnityEngine.UI.Button runSmokeTestButton = null;
-    [SerializeField] private UnityEngine.UI.Button runAnimatedTestButton = null;
-    [SerializeField] private UnityEngine.UI.Button runEnumeratedTestButton = null;
-    [SerializeField] private UnityEngine.UI.Button proceedButton = null;
     [SerializeField] private GameObject playerParent = null;
     [SerializeField] private GameObject mobParent = null;
     [SerializeField] private uint heroes = 4;
     [SerializeField] private uint mobsPerWave = 4;
+    [SerializeField] private uint bossWave = 5;
     [SerializeField] private int seed = 2112;
     [SerializeField] private float eventWaitSeconds = 0.5f;
 
+    private MainAssetLink assets;
+    private MainUILink ui;
     void Start()
     {
+        assets = GetComponent<MainAssetLink>();
+        ui = GetComponent<MainUILink>();
+
         TestRunning = false;
     }
     private bool TestRunning
     {
         get
         {
-            return !runSmokeTestButton.interactable;
+            return !ui.runSmokeTestButton.interactable;
         }
         set
         {
-            runSmokeTestButton.interactable = !value;
-            runAnimatedTestButton.interactable = !value;
-            runEnumeratedTestButton.interactable = !value;
+            ui.runSmokeTestButton.interactable = !value;
+            ui.runAnimatedTestButton.interactable = !value;
+            ui.runEnumeratedTestButton.interactable = !value;
         }
     }
     public void RunSmokeTest()
@@ -71,7 +73,7 @@ public class Main : MonoBehaviour
     public void SetWaiting(bool waiting = true)
     {
         waitingToProceed = waiting;
-        proceedButton.interactable = waiting;
+        ui.proceedButton.interactable = waiting;
     }
     IEnumerator AnimateGame()
     {
@@ -83,6 +85,11 @@ public class Main : MonoBehaviour
         RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
         RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
 
+        GameEvents.Instance.RoundStart += g =>
+        {
+            Debug.Log("start of turn");
+            ui.roundText.text = $"Wave {nWaves}, Round {game.NumRounds}";
+        };
         GameEvents.Instance.ActorTurnStart += (g, a) =>
         {
             animationList.Add(AnimateActorActionsStart(a));
@@ -168,6 +175,7 @@ public class Main : MonoBehaviour
         Debug.Log($"Death of {name}");
         yield return new WaitForSeconds(eventWaitSeconds);
     }
+    int nWaves = 0;
     IEnumerator AnimateEnumeratedGame()
     {
         TestRunning = true;
@@ -177,10 +185,14 @@ public class Main : MonoBehaviour
         GameEvents.Instance.RoundStart += g =>
         {
             Debug.Log("start of turn");
+            ui.roundText.text = $"Wave {nWaves}, Round {game.NumRounds}";
         };
         GameEvents.Instance.ActorTurnStart += (g, a) =>
         {
             Debug.Log($"{a.uniqueName} starts");
+
+            ui.debugText.text = $"{a.uniqueName}'s turn";
+
             var slot = actorToCharacterSlot[a];
             slot.ToggleTurnIndicator(true);
         };
@@ -224,15 +236,28 @@ public class Main : MonoBehaviour
         };
 
         var mobGen = Util.GetMobGenerator(game.rng);
+        var bossGen = Util.GetBossGenerator(game.rng);
+
+        nWaves = 0;
         while (game.GameProgress != Game.Progress.MobsWin)
         {
             // start a new wave
             game.ClearActors(Game.ActorAlignment.Mob);  // have to do this manually for now - maybe move this to Game
-            for (int i = 0; i < mobsPerWave; ++i)
-            {
-                game.AddActor(mobGen.Gen(true), Game.ActorAlignment.Mob);
-            }
 
+            if ((++nWaves % bossWave) == 0)
+            {
+                var boss = bossGen.Gen(true);
+                Debug.Log($"ADDING BOSS {boss}");
+
+                game.AddActor(boss, Game.ActorAlignment.Mob);
+            }
+            else
+            {
+                for (int i = 0; i < mobsPerWave; ++i)
+                {
+                    game.AddActor(mobGen.Gen(true), Game.ActorAlignment.Mob);
+                }
+            }
             Debug.Log($"=-=-=-=-starting new wave {actorToCharacterSlot.Values.Count}");
             // for simplicity, ditch and re-render everything
             foreach (var slot in actorToCharacterSlot.Values)
@@ -245,7 +270,7 @@ public class Main : MonoBehaviour
 
             while (game.GameProgress == Game.Progress.InProgress)
             {
-                var actions = game.EnumerateRoundActions();
+                var actions = game.EnumerateRound();
                 while (actions.MoveNext())
                 {
                     yield return new WaitForSeconds(eventWaitSeconds);
@@ -257,9 +282,11 @@ public class Main : MonoBehaviour
             yield return new WaitUntil(() => !waitingToProceed);
             SetWaiting(false);
         }
-        Debug.Log($"game ended with {game.GameProgress}");
+        var result = $"game ended with {game.GameProgress}";
+        Debug.Log(result);
         Debug.Log(game.ToString());
 
+        ui.debugText.text = result;
         GameEvents.ReleaseAllListeners();
         TestRunning = false;
     }
@@ -272,7 +299,7 @@ public class Main : MonoBehaviour
         float ySpacing = rect.height / actors.Count / 2;
         float x = alignment == Game.ActorAlignment.Player ? -3 : 3;
 
-        var assets = GetComponent<AssetLink>();
+        var assets = GetComponent<MainAssetLink>();
         GameObject createSlot(GameActor actor, float y)
         {
             var retval = Instantiate(assets.CharacterSlotPrefab);
