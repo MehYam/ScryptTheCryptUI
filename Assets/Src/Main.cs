@@ -79,7 +79,7 @@ public class Main : MonoBehaviour
         var animationList = new List<IEnumerator>();
 
         var rng = new RNG(seed);
-        var game = Util.GetSampleGameWithPlayers(rng, 3);
+        var game = Util.GetSampleGameWithPlayers(rng, (int)heroes);
         RenderActors(game.Players, Game.ActorAlignment.Player, playerParent);
         RenderActors(game.Mobs, Game.ActorAlignment.Mob, mobParent);
 

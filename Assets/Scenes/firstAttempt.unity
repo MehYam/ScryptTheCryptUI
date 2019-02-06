@@ -1043,7 +1043,10 @@ MonoBehaviour:
   proceedButton: {fileID: 1823605800}
   playerParent: {fileID: 971802245}
   mobParent: {fileID: 2119045497}
+  heroes: 3
   mobsPerWave: 4
+  seed: 2100
+  eventWaitSeconds: 0.5
 --- !u!4 &1213347601
 Transform:
   m_ObjectHideFlags: 0

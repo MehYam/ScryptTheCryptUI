@@ -49,13 +49,13 @@ public static class Util
         new GameWeapon("cudgel", 6),
         new GameWeapon("dingbat", 3),
         new GameWeapon("electric sword", 10),
-        new GameWeapon("fencing sabre", 9),
+        new GameWeapon("fencing sabre", 7),
         new GameWeapon("gun knife", 4),
-        new GameWeapon("helishears", 8),
+        new GameWeapon("helishears", 3),
         new GameWeapon("ignition rod", 7),
         new GameWeapon("jax", 9),
-        new GameWeapon("kelvin sapper", 11),
-        new GameWeapon("long shiv", 10),
+        new GameWeapon("kelvin sapper", 5),
+        new GameWeapon("long shiv", 8),
         new GameWeapon("monkey bite", 2)
     };
     static public Game SampleBattle
