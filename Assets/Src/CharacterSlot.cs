@@ -35,11 +35,11 @@ public class CharacterSlot : MonoBehaviour
         }
     }
     public GameObject Character { get; private set; }
-    public void ShowCharacter(Game.ActorAlignment charType)
+    public void ShowCharacter(GameActor.Alignment charType)
     {
         Debug.Assert(Character == null, "showing already shown character");
 
-        var prefab = charType == Game.ActorAlignment.Player ? PlayerSprite : MobSprite;
+        var prefab = charType == GameActor.Alignment.Player ? PlayerSprite : MobSprite;
         Character = Instantiate(prefab);
 
         Character.transform.SetParent(transform, false);
@@ -48,7 +48,7 @@ public class CharacterSlot : MonoBehaviour
     static readonly Vector2 nameplateOffsetL = new Vector2(-52, 20);
     static readonly Vector2 nameplateOffsetR = new Vector2(52, 20);
     public Nameplate Nameplate { get; private set; }
-    public void ShowNameplate(Game.ActorAlignment charType)
+    public void ShowNameplate(GameActor.Alignment charType)
     {
         Debug.Assert(Nameplate == null, "showing already shown nameplate");
 
@@ -56,7 +56,7 @@ public class CharacterSlot : MonoBehaviour
         Nameplate = nameplateGO.GetComponent<Nameplate>();
         Nameplate.transform.SetParent(UIParent.transform, false);
 
-        var offset = charType == Game.ActorAlignment.Player ? nameplateOffsetL : nameplateOffsetR;
+        var offset = charType == GameActor.Alignment.Player ? nameplateOffsetL : nameplateOffsetR;
         var screen = WorldToScreenPoint(transform.position);
         Nameplate.transform.position = screen + offset;
     }

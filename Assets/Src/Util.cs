@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Text;
+
 using UnityEngine;
 
+using kaiGameUtil;
 using ScryptTheCrypt;
 using ScryptTheCrypt.Actions;
-
-using kaiGameUtil;
 
 public static class Util
 {
@@ -26,21 +27,30 @@ public static class Util
             }
         }
     }
-    static GameActor[] actors = new GameActor[] 
+    static GameActor[] players = new GameActor[] 
     {
-        new GameActor("alice"),
-        new GameActor("bob"),
-        new GameActor("carly"),
-        new GameActor("denise"),
-        new GameActor("edgar"),
-        new GameActor("faust"),
-        new GameActor("gabbers"),
-        new GameActor("heiki"),
-        new GameActor("ivano"),
-        new GameActor("jakob"),
-        new GameActor("kai"),
-        new GameActor("leo"),
-        new GameActor("minerva")
+        new GameActor(GameActor.Alignment.Player, "alice"),
+        new GameActor(GameActor.Alignment.Player, "bob"),
+        new GameActor(GameActor.Alignment.Player, "carly"),
+        new GameActor(GameActor.Alignment.Player, "denise"),
+        new GameActor(GameActor.Alignment.Player, "edgar"),
+        new GameActor(GameActor.Alignment.Player, "faust"),
+        new GameActor(GameActor.Alignment.Player, "gabbers"),
+        new GameActor(GameActor.Alignment.Player, "heiki"),
+        new GameActor(GameActor.Alignment.Player, "ivano"),
+        new GameActor(GameActor.Alignment.Player, "jakob"),
+        new GameActor(GameActor.Alignment.Player, "kai"),
+        new GameActor(GameActor.Alignment.Player, "leo"),
+        new GameActor(GameActor.Alignment.Player, "minerva")
+    };
+    static GameActor[] mobs = new GameActor[] 
+    {
+        new GameActor(GameActor.Alignment.Mob, "rat", 5),
+        new GameActor(GameActor.Alignment.Mob, "goblin", 10),
+        new GameActor(GameActor.Alignment.Mob, "spectre", 15),
+        new GameActor(GameActor.Alignment.Mob, "skeleton", 20),
+        new GameActor(GameActor.Alignment.Mob, "pirate", 50),
+        new GameActor(GameActor.Alignment.Mob, "bandit", 55)
     };
     static GameWeapon[] weapons = new GameWeapon[] 
     {
@@ -58,53 +68,16 @@ public static class Util
         new GameWeapon("long shiv", 8),
         new GameWeapon("monkey bite", 2)
     };
-    static public Game SampleBattle
-    {
-        get
-        {
-            // run some simple tests to create and invoke a Game
-            var game = new Game(2112);
-            var player = new GameActor("alice");
-            var player2 = new GameActor("bob");
-            var mob = new GameActor("carly");
-            var mob2 = new GameActor("denise");
-
-            // set targeting and affinities
-            player.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            player2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            mob.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
-            mob2.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
-
-            player.AddAction(new ActionAttack());
-            player2.AddAction(new ActionAttack());
-            mob.AddAction(new ActionAttack());
-            mob2.AddAction(new ActionAttack());
-
-            player.Weapon = new GameWeapon("alice's axe", 22);
-            player2.Weapon = new GameWeapon("bob's burger", 12);
-            mob.Weapon = new GameWeapon("carly's cutlass", 33);
-            mob2.Weapon = new GameWeapon("denise's dog", 5);
-
-            game.Players.Add(player);
-            game.Players.Add(player2);
-            game.Mobs.Add(mob);
-            game.Mobs.Add(mob2);
-
-            return game;
-        }
-    }
     static public Game GetSampleGameWithPlayers(RNG rng, int nPlayers)
     {
         var game = new Game(rng);
         for (var i = 0; i < nPlayers; ++i)
         {
-            var actorTemplate = Util.actors[game.rng.NextIndex(Util.actors)];
-            var actor = new GameActor(actorTemplate.name, actorTemplate.baseHealth);
+            var actorTemplate = Util.players[game.rng.NextIndex(Util.players)];
+            var actor = new GameActor(GameActor.Alignment.Player, actorTemplate.name, actorTemplate.baseHealth);
 
-            actor.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Mob));
-            actor.AddAction(new ActionAttack());
             actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
-            game.AddActor(actor, Game.ActorAlignment.Player);
+            game.AddActor(actor);
         }
         return game;
     }
@@ -119,29 +92,28 @@ public static class Util
         }
         public GameActor Gen(bool addDefaultAttack)
         {
-            var retval = generators[rng.NextIndex(generators)]();
+            var actor = generators[rng.NextIndex(generators)]();
             if (addDefaultAttack)
             {
-                retval.AddAction(new ActionChooseRandomTarget(Game.ActorAlignment.Player));
-                retval.AddAction(new ActionAttack());
+                actor.SetScrypt(ScryptUtil.defaultAttack);
             }
-            return retval;
+            return actor;
         }
     }
     static public MobGenerator GetMobGenerator(RNG rng)
     {
         return new MobGenerator(rng, 
-            () => new GameActor("rat", 10, new GameWeapon("teeth", 4)),
-            () => new GameActor("mole", 8, new GameWeapon("claw", 6)),
-            () => new GameActor("lynx", 15, new GameWeapon("pounce", 10))
+            () => new GameActor(GameActor.Alignment.Mob, "rat", 10, new GameWeapon("teeth", 4)),
+            () => new GameActor(GameActor.Alignment.Mob, "mole", 8, new GameWeapon("claw", 6)),
+            () => new GameActor(GameActor.Alignment.Mob, "lynx", 15, new GameWeapon("pounce", 10))
         );
     }
     static public MobGenerator GetBossGenerator(RNG rng)
     {
         return new MobGenerator(rng,
-            () => new GameActor("rat boss", 30, new GameWeapon("gold teeth", 12)),
-            () => new GameActor("mole captain", 35, new GameWeapon("poison claw", 14)),
-            () => new GameActor("trained lynx", 40, new GameWeapon("swipe", 15))
+            () => new GameActor(GameActor.Alignment.Mob, "rat boss", 30, new GameWeapon("gold teeth", 12)),
+            () => new GameActor(GameActor.Alignment.Mob, "mole captain", 35, new GameWeapon("poison claw", 14)),
+            () => new GameActor(GameActor.Alignment.Mob, "trained lynx", 40, new GameWeapon("swipe", 15))
         );
     }
     static public Rect GetScreenRectInWorldCoords()
