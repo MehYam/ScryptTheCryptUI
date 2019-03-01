@@ -5,6 +5,7 @@ public class MainUILink : MonoBehaviour
 {
     public Button runActionButton = null;
     public Button runRound = null;
-    public Text roundText = null;
-    public Text debugText = null;
+    public Button renderEvent = null;
+    public Text debugText1 = null;
+    public Text debugText2 = null;
 }

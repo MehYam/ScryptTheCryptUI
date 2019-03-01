@@ -49,10 +49,123 @@ public class Main : MonoBehaviour
         _runState = state;
         if (_coroutine == null && state != RunState.Idle)
         {
-            _coroutine = StartCoroutine(RunGame());
+            _coroutine = StartCoroutine(RunGame_v2_WithRenderers());
         }
     }
-    int nWaves = 0;
+    int nCurrentWave = 0;
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    /// <summary>
+    /// Event queue-based implementation
+    /// </summary>
+    /// ////////////////////////////////////////////////////////////////////////////////////////
+    Queue<IGameEventRenderer> events = new Queue<IGameEventRenderer>();
+    void EnqueueEvent(IGameEventRenderer e)
+    {
+        events.Enqueue(e);
+        ui.renderEvent.interactable = events.Count > 0;
+        ui.debugText1.text = $"Events: {events.Count}";
+    }
+    public void RenderEvent()
+    {
+        var e = events.Dequeue();
+        Debug.Log($"rendering {e}");
+
+        ui.renderEvent.interactable = events.Count > 0;
+        ui.debugText1.text = $"Events: {events.Count}";
+    }
+    IEnumerator RunGame_v2_WithRenderers()
+    {
+        GameEvents.Instance.ActorAdded += (g, a) =>
+        {
+            EnqueueEvent(new ActorAddedRenderer(a));
+        };
+        GameEvents.Instance.ActorRemoved += (g, a) =>
+        {
+            EnqueueEvent(new ActorRemovedRenderer(a));
+        };
+        GameEvents.Instance.RoundStart += g =>
+        {
+            Debug.Log("start of turn");
+            EnqueueEvent(new RoundStartRenderer(g.NumRounds));
+        };
+        GameEvents.Instance.ActorActionsStart += (g, a) =>
+        {
+            Debug.Log($"{a.uniqueName} starts");
+            EnqueueEvent(new ActorActionsStartRenderer(a));
+        };
+        GameEvents.Instance.ActorActionsEnd += (g, a) =>
+        {
+            Debug.Log($"{a.uniqueName} ends");
+            EnqueueEvent(new ActorActionsEndRenderer(a));
+        };
+        GameEvents.Instance.TargetSelected += a =>
+        {
+            Debug.Log($"{a.uniqueName} chooses target {a.Target}");
+            EnqueueEvent(new TargetSelectedRenderer(a));
+        };
+        GameEvents.Instance.AttackStart += (a, b) =>
+        {
+            Debug.Log($"{a.uniqueName} attacks {b.uniqueName}");
+            EnqueueEvent(new AttackRenderer(a, b));
+        };
+        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
+        {
+            Debug.Log($"{a.uniqueName} health {oldHealth} => {newHealth}");
+            EnqueueEvent(new HealthChangeRenderer(a, oldHealth, newHealth));
+        };
+        GameEvents.Instance.Death += a =>
+        {
+            Debug.Log($"RIP {a.uniqueName}");
+            EnqueueEvent(new DeathRenderer(a));
+        };
+
+        var rng = new RNG(seed);
+        var game = Util.GetSampleGameWithPlayers(rng, 3);
+        var mobGen = Util.GetMobGenerator(game.rng);
+        var bossGen = Util.GetBossGenerator(game.rng);
+
+        // the mobs always win, play until they do
+        nCurrentWave = 0;
+        while (game.GameProgress != Game.Progress.MobsWin) // loop over waves
+        {
+            // new wave of mobs
+            ++nCurrentWave;
+            Debug.Log($"=-=-=-=-=-=-= starting wave {nCurrentWave} =-=-=-=-=-=");
+
+            game.ClearActors(GameActor.Alignment.Mob);
+
+            if ((++nCurrentWave % bossWave) == 0)
+            {
+                var boss = bossGen.Gen(true);
+                Debug.Log($"ADDING BOSS {boss}");
+
+                game.AddActor(boss);
+            }
+            else
+            {
+                for (int i = 0; i < mobsPerWave; ++i)
+                {
+                    game.AddActor(mobGen.Gen(true));
+                }
+            }
+
+            while (game.GameProgress == Game.Progress.InProgress) // loop over rounds until wave is clear or players are dead
+            {
+                Debug.Log($"=-=-=-=-=-==--=- invoking round {game.NumRounds} =-=--=-=-=-=-");
+                var actions = game.EnumerateRound_Scrypt();
+                while (actions.MoveNext())
+                {
+                }
+                Debug.Log($"=-=-=-=-=-=-=-=- round {game.NumRounds} complete ==-=-=-=-=-=-");
+
+                SetRunState(RunState.Idle);
+                yield return new WaitUntil(() => _runState != RunState.Idle);
+            }
+            Debug.Log($"=-=-==-=-=- round ended with {game.GameProgress} =-=-=-=-=-=-=-=-=");
+        }
+        Debug.Log($"=-=-=-=-==-=- game ended with {game.GameProgress} =-=-=-=-=-=-");
+        yield return null;
+    }
     IEnumerator RunGame()
     {
         var rng = new RNG(seed);
@@ -61,13 +174,13 @@ public class Main : MonoBehaviour
         GameEvents.Instance.RoundStart += g =>
         {
             Debug.Log("start of turn");
-            ui.roundText.text = $"Wave {nWaves}, Round {game.NumRounds}";
+            ui.debugText1.text = $"Wave {nCurrentWave}, Round {game.NumRounds}";
         };
         GameEvents.Instance.ActorActionsStart += (g, a) =>
         {
             Debug.Log($"{a.uniqueName} starts");
 
-            ui.debugText.text = $"{a.uniqueName}'s turn";
+            ui.debugText2.text = $"{a.uniqueName}'s turn";
 
             var slot = actorToCharacterSlot[a];
             slot.ToggleTurnIndicator(true);
@@ -114,13 +227,13 @@ public class Main : MonoBehaviour
         var mobGen = Util.GetMobGenerator(game.rng);
         var bossGen = Util.GetBossGenerator(game.rng);
 
-        nWaves = 0;
+        nCurrentWave = 0;
         while (game.GameProgress != Game.Progress.MobsWin)
         {
             // start a new mob wave
             game.ClearActors(GameActor.Alignment.Mob);  // have to do this manually for now - maybe move this to Game
 
-            if ((++nWaves % bossWave) == 0)
+            if ((++nCurrentWave % bossWave) == 0)
             {
                 var boss = bossGen.Gen(true);
                 Debug.Log($"ADDING BOSS {boss}");
@@ -173,9 +286,12 @@ public class Main : MonoBehaviour
         Debug.Log(result);
         Debug.Log(game.ToString());
 
-        ui.debugText.text = result;
+        ui.debugText2.text = result;
         GameEvents.ReleaseAllListeners();
     }
+    /// <summary>
+    /// //////////////////// OLD IMPLEMENTATION ////////////////////////////////////////////
+    /// </summary>
     readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     void RenderActors(IList<GameActor> actors, GameActor.Alignment alignment, GameObject parent)
     {
