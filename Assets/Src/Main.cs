@@ -7,8 +7,6 @@ using ScryptTheCrypt;
 
 public class Main : MonoBehaviour
 {
-    [SerializeField] private GameObject playerParent = null;
-    [SerializeField] private GameObject mobParent = null;
     [SerializeField] private uint heroes = 4;
     [SerializeField] private uint mobsPerWave = 4;
     [SerializeField] private uint bossWave = 5;
@@ -23,10 +21,6 @@ public class Main : MonoBehaviour
         ui = GetComponent<MainUILink>();
 
         SetRunState(RunState.Idle);
-    }
-    void OnDestroy()
-    {
-        GameEvents.ReleaseAllListeners();
     }
     public void RunAction()
     {
@@ -58,66 +52,9 @@ public class Main : MonoBehaviour
     /// Event queue-based implementation
     /// </summary>
     /// ////////////////////////////////////////////////////////////////////////////////////////
-    Queue<IGameEventRenderer> events = new Queue<IGameEventRenderer>();
-    void EnqueueEvent(IGameEventRenderer e)
-    {
-        events.Enqueue(e);
-        ui.renderEvent.interactable = events.Count > 0;
-        ui.debugText1.text = $"Events: {events.Count}";
-    }
-    public void RenderEvent()
-    {
-        var e = events.Dequeue();
-        Debug.Log($"rendering {e}");
-
-        ui.renderEvent.interactable = events.Count > 0;
-        ui.debugText1.text = $"Events: {events.Count}";
-    }
     IEnumerator RunGame_v2_WithRenderers()
     {
-        GameEvents.Instance.ActorAdded += (g, a) =>
-        {
-            EnqueueEvent(new ActorAddedRenderer(a));
-        };
-        GameEvents.Instance.ActorRemoved += (g, a) =>
-        {
-            EnqueueEvent(new ActorRemovedRenderer(a));
-        };
-        GameEvents.Instance.RoundStart += g =>
-        {
-            Debug.Log("start of turn");
-            EnqueueEvent(new RoundStartRenderer(g.NumRounds));
-        };
-        GameEvents.Instance.ActorActionsStart += (g, a) =>
-        {
-            Debug.Log($"{a.uniqueName} starts");
-            EnqueueEvent(new ActorActionsStartRenderer(a));
-        };
-        GameEvents.Instance.ActorActionsEnd += (g, a) =>
-        {
-            Debug.Log($"{a.uniqueName} ends");
-            EnqueueEvent(new ActorActionsEndRenderer(a));
-        };
-        GameEvents.Instance.TargetSelected += a =>
-        {
-            Debug.Log($"{a.uniqueName} chooses target {a.Target}");
-            EnqueueEvent(new TargetSelectedRenderer(a));
-        };
-        GameEvents.Instance.AttackStart += (a, b) =>
-        {
-            Debug.Log($"{a.uniqueName} attacks {b.uniqueName}");
-            EnqueueEvent(new AttackRenderer(a, b));
-        };
-        GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
-        {
-            Debug.Log($"{a.uniqueName} health {oldHealth} => {newHealth}");
-            EnqueueEvent(new HealthChangeRenderer(a, oldHealth, newHealth));
-        };
-        GameEvents.Instance.Death += a =>
-        {
-            Debug.Log($"RIP {a.uniqueName}");
-            EnqueueEvent(new DeathRenderer(a));
-        };
+        var rendererHost = GetComponent<GameEventRenderer>();
 
         var rng = new RNG(seed);
         var game = Util.GetSampleGameWithPlayers(rng, 3);
@@ -148,7 +85,6 @@ public class Main : MonoBehaviour
                     game.AddActor(mobGen.Gen(true));
                 }
             }
-
             while (game.GameProgress == Game.Progress.InProgress) // loop over rounds until wave is clear or players are dead
             {
                 Debug.Log($"=-=-=-=-=-==--=- invoking round {game.NumRounds} =-=--=-=-=-=-");
@@ -166,6 +102,7 @@ public class Main : MonoBehaviour
         Debug.Log($"=-=-=-=-==-=- game ended with {game.GameProgress} =-=-=-=-=-=-");
         yield return null;
     }
+    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
     IEnumerator RunGame()
     {
         var rng = new RNG(seed);
@@ -253,8 +190,8 @@ public class Main : MonoBehaviour
                 GameObject.Destroy(slot.gameObject);
             }
             actorToCharacterSlot.Clear();
-            RenderActors(game.Players, GameActor.Alignment.Player, playerParent);
-            RenderActors(game.Mobs, GameActor.Alignment.Mob, mobParent);
+            //RenderActors(game.Players, GameActor.Alignment.Player, playerParent);
+            //RenderActors(game.Mobs, GameActor.Alignment.Mob, mobParent);
 
             Debug.Log($"=-=-=-=-spawned new wave size {actorToCharacterSlot.Values.Count}=-=-=-=-=-=-=-=");
 
@@ -288,51 +225,5 @@ public class Main : MonoBehaviour
 
         ui.debugText2.text = result;
         GameEvents.ReleaseAllListeners();
-    }
-    /// <summary>
-    /// //////////////////// OLD IMPLEMENTATION ////////////////////////////////////////////
-    /// </summary>
-    readonly Dictionary<GameActor, CharacterSlot> actorToCharacterSlot = new Dictionary<GameActor, CharacterSlot>();
-    void RenderActors(IList<GameActor> actors, GameActor.Alignment alignment, GameObject parent)
-    {
-        var rect = Util.GetScreenRectInWorldCoords();
-        Debug.Log($"screen rect {rect}");
-
-        float ySpacing = rect.height / actors.Count / 2;
-        float x = alignment == GameActor.Alignment.Player ? -3 : 3;
-
-        var assets = GetComponent<MainAssetLink>();
-        GameObject createSlot(GameActor actor, float y)
-        {
-            var retval = Instantiate(assets.CharacterSlotPrefab);
-            var slot = retval.GetComponent<CharacterSlot>();
-            slot.transform.position = new Vector2(x, y);
-
-            slot.ShowCharacter(alignment);
-            slot.ShowNameplate(alignment);
-            slot.Nameplate.Name.text = actor.name;
-            slot.Nameplate.HealthBar.Percent = actor.Health / actor.baseHealth;
-
-            var id = $"{actor.uniqueName} ({alignment})";
-            slot.name = $"slot {id}";
-            slot.Nameplate.name = id;
-            retval.transform.parent = parent.transform;
-
-            if (actorToCharacterSlot.ContainsKey(actor))
-            {
-                Debug.LogError($"{actor.uniqueName} already in actorToCharacterSlot");
-                Debug.Assert(!actorToCharacterSlot.ContainsKey(actor));
-            }
-
-            actorToCharacterSlot[actor] = slot;
-            return retval;
-        }
-
-        float yCurrent = rect.center.y + ySpacing * (actors.Count / 2);
-        foreach(var actor in actors)
-        {
-            var slot = createSlot(actor, yCurrent);
-            yCurrent -= ySpacing;
-        }
     }
 }

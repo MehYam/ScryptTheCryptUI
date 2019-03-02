@@ -35,15 +35,26 @@ public class CharacterSlot : MonoBehaviour
         }
     }
     public GameObject Character { get; private set; }
+    private GameActor.Alignment align;
     public void ShowCharacter(GameActor.Alignment charType)
     {
         Debug.Assert(Character == null, "showing already shown character");
 
-        var prefab = charType == GameActor.Alignment.Player ? PlayerSprite : MobSprite;
+        align = charType;
+        var prefab = align == GameActor.Alignment.Player ? PlayerSprite : MobSprite;
         Character = Instantiate(prefab);
 
         Character.transform.SetParent(transform, false);
         Character.GetComponent<SpriteRenderer>().sortingLayerName = "Character";
+    }
+    public void OnPositionUpdated()
+    {
+        if (Nameplate != null)
+        {
+            var offset = align == GameActor.Alignment.Player ? nameplateOffsetL : nameplateOffsetR;
+            var screen = WorldToScreenPoint(transform.position);
+            Nameplate.transform.position = screen + offset;
+        }
     }
     static readonly Vector2 nameplateOffsetL = new Vector2(-52, 20);
     static readonly Vector2 nameplateOffsetR = new Vector2(52, 20);
@@ -55,10 +66,6 @@ public class CharacterSlot : MonoBehaviour
         GameObject nameplateGO = Instantiate(NameplateUI);
         Nameplate = nameplateGO.GetComponent<Nameplate>();
         Nameplate.transform.SetParent(UIParent.transform, false);
-
-        var offset = charType == GameActor.Alignment.Player ? nameplateOffsetL : nameplateOffsetR;
-        var screen = WorldToScreenPoint(transform.position);
-        Nameplate.transform.position = screen + offset;
     }
     private void ToggleIndicator(bool show, Transform parent, GameObject prefab, ref GameObject existing)
     {
