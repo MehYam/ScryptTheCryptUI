@@ -31,12 +31,12 @@ public class GameEventRenderer : MonoBehaviour
         GameEvents.Instance.ActorActionsStart += (g, a) =>
         {
             Debug.Log($"{a.uniqueName} starts");
-            EnqueueEvent(new ActorActionsStartRenderer(a));
+            EnqueueEvent(new ActorActionsStartRenderer(this, a));
         };
         GameEvents.Instance.ActorActionsEnd += (g, a) =>
         {
             Debug.Log($"{a.uniqueName} ends");
-            EnqueueEvent(new ActorActionsEndRenderer(a));
+            EnqueueEvent(new ActorActionsEndRenderer(this, a));
         };
         GameEvents.Instance.TargetSelected += a =>
         {
@@ -105,8 +105,8 @@ public class GameEventRenderer : MonoBehaviour
     readonly Dictionary<int, CharacterSlot> actorIdToCharacterSlot = new Dictionary<int, CharacterSlot>();
     class ActorAddedRenderer : IGameEventRenderer
     {
-        public readonly GameEventRenderer host;
-        public readonly GameActorState actor;
+        readonly GameEventRenderer host;
+        readonly GameActorState actor;
         public ActorAddedRenderer(GameEventRenderer host, GameActor a)
         {
             this.host = host;
@@ -137,35 +137,42 @@ public class GameEventRenderer : MonoBehaviour
     }
     class ActorRemovedRenderer : IGameEventRenderer
     {
-        public readonly int id;
+        readonly int id;
         public ActorRemovedRenderer(GameActor a) {  this.id = a.id; }
         public void Render()
         {
-            throw new System.NotImplementedException();
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
         }
     }
     class RoundStartRenderer : IGameEventRenderer
     {
-        public readonly int round;
+        readonly int round;
         public RoundStartRenderer(int round) { this.round = round; }
         public void Render()
         {
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
         }
     }
     class ActorActionsStartRenderer : IGameEventRenderer
     {
-        public readonly int actorId;
-        public ActorActionsStartRenderer(GameActor a) {  this.actorId = a.id; }
+        readonly GameEventRenderer host;
+        readonly int actorId;
+        public ActorActionsStartRenderer(GameEventRenderer host, GameActor a) {  this.host = host; this.actorId = a.id; }
         public void Render()
         {
+            var slot = host.actorIdToCharacterSlot[actorId];
+            slot.ToggleTurnIndicator(true);
         }
     }
     class ActorActionsEndRenderer : IGameEventRenderer
     {
-        public readonly int actorId;
-        public ActorActionsEndRenderer(GameActor a) {  this.actorId = a.id; }
+        readonly GameEventRenderer host;
+        readonly int actorId;
+        public ActorActionsEndRenderer(GameEventRenderer host, GameActor a) {  this.host = host; this.actorId = a.id; }
         public void Render()
         {
+            var slot = host.actorIdToCharacterSlot[actorId];
+            slot.ToggleTurnIndicator(false);
         }
     }
     class TargetSelectedRenderer : IGameEventRenderer
@@ -179,6 +186,7 @@ public class GameEventRenderer : MonoBehaviour
         }
         public void Render()
         {
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
         }
     }
     class AttackRenderer : IGameEventRenderer
@@ -191,7 +199,9 @@ public class GameEventRenderer : MonoBehaviour
             targetId = target.id;
         }
         public void Render()
-        { }
+        {
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+        }
     }
     class HealthChangeRenderer : IGameEventRenderer
     {
@@ -207,14 +217,18 @@ public class GameEventRenderer : MonoBehaviour
             this.after = after;
         }
         public void Render()
-        { }
+        {
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+        }
     }
     class DeathRenderer : IGameEventRenderer
     {
         public readonly int actorId;
         public DeathRenderer(GameActor a) { actorId = a.id; }
         public void Render()
-        { }
+        {
+            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+        }
     }
     Queue<IGameEventRenderer> events = new Queue<IGameEventRenderer>();
     void EnqueueEvent(IGameEventRenderer e)
