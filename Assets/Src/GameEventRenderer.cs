@@ -41,7 +41,7 @@ public class GameEventRenderer : MonoBehaviour
         GameEvents.Instance.TargetSelected += a =>
         {
             Debug.Log($"{a.uniqueName} chooses target {a.Target}");
-            EnqueueEvent(new TargetSelectedRenderer(a));
+            EnqueueEvent(new TargetSelectedRenderer(this, a));
         };
         GameEvents.Instance.AttackStart += (a, b) =>
         {
@@ -177,16 +177,30 @@ public class GameEventRenderer : MonoBehaviour
     }
     class TargetSelectedRenderer : IGameEventRenderer
     {
+        readonly GameEventRenderer host;
         public readonly int actorId;
         public readonly int targetId;
-        public TargetSelectedRenderer(GameActor a)
+        public TargetSelectedRenderer(GameEventRenderer host, GameActor a)
         {
+            this.host = host;
             actorId = a.id;
             targetId = a.Target == null ? GameActorState.NULL_ID : a.Target.id;
         }
         public void Render()
         {
-            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+            if (targetId == GameActorState.NULL_ID)
+            {
+                // clear all existing targets reticles
+                foreach (var slot in host.actorIdToCharacterSlot.Values)
+                {
+                    slot.ToggleTargetIndicator(false);
+                }
+            }
+            else
+            {
+                var slot = host.actorIdToCharacterSlot[targetId];
+                slot.ToggleTargetIndicator(true);
+            }
         }
     }
     class AttackRenderer : IGameEventRenderer
