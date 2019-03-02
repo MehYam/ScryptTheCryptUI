@@ -57,7 +57,7 @@ public class Main : MonoBehaviour
         var rendererHost = GetComponent<GameEventRenderer>();
 
         var rng = new RNG(seed);
-        var game = Util.GetSampleGameWithPlayers(rng, 3);
+        var game = Util.GetSampleGameWithPlayers(rng, heroes);
         var mobGen = Util.GetMobGenerator(game.rng);
         var bossGen = Util.GetBossGenerator(game.rng);
 

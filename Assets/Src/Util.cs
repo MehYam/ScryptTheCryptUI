@@ -68,7 +68,7 @@ public static class Util
         new GameWeapon("long shiv", 8),
         new GameWeapon("monkey bite", 2)
     };
-    static public Game GetSampleGameWithPlayers(RNG rng, int nPlayers)
+    static public Game GetSampleGameWithPlayers(RNG rng, uint nPlayers)
     {
         var game = new Game(rng);
         for (var i = 0; i < nPlayers; ++i)

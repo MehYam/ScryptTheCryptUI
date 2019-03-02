@@ -11,7 +11,6 @@ public class CharacterSlot : MonoBehaviour
     [SerializeField] private GameObject TargetIndicator = null;
     [SerializeField] private GameObject DeathIndicator = null;
     [SerializeField] private GameObject DamageText = null;
-    [SerializeField] private GameObject CallToAttentionIndicator = null;
     [SerializeField] private GameObject Floor = null;
     [SerializeField] private GameObject NameplateUI = null;
 

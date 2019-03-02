@@ -46,17 +46,17 @@ public class GameEventRenderer : MonoBehaviour
         GameEvents.Instance.AttackStart += (a, b) =>
         {
             Debug.Log($"{a.uniqueName} attacks {b.uniqueName}");
-            EnqueueEvent(new AttackRenderer(a, b));
+            EnqueueEvent(new AttackRenderer(this, a, b));
         };
         GameEvents.Instance.ActorHealthChange += (a, oldHealth, newHealth) =>
         {
             Debug.Log($"{a.uniqueName} health {oldHealth} => {newHealth}");
-            EnqueueEvent(new HealthChangeRenderer(a, oldHealth, newHealth));
+            EnqueueEvent(new HealthChangeRenderer(this, a, oldHealth, newHealth));
         };
         GameEvents.Instance.Death += a =>
         {
             Debug.Log($"RIP {a.uniqueName}");
-            EnqueueEvent(new DeathRenderer(a));
+            EnqueueEvent(new DeathRenderer(this, a));
         };
     }
     private void OnDestroy()
@@ -91,14 +91,16 @@ public class GameEventRenderer : MonoBehaviour
 
         float xOffset = rect.width / 4;
         float x = alignment == GameActor.Alignment.Player ? (rect.center.x - xOffset) : (rect.center.x + xOffset);
-        float ySpacing = rect.height / slots.Length / 2;
-        float yCurrent = rect.center.y + ySpacing * (slots.Length / 2);
+        float nSlots = (float)slots.Length;
+        float screenHeightMinusMargin = rect.height - 1;
+        float slotHeight = screenHeightMinusMargin / nSlots;
+        float yCurrent = rect.center.y + ((nSlots - 1)/2) * slotHeight;
         foreach (var slot in slots)
         {
             slot.transform.position = new Vector2(x, yCurrent);
             slot.OnPositionUpdated();  // because Unity doesn't do this for you
 
-            yCurrent -= ySpacing;
+            yCurrent -= slotHeight;
         }
     }
     readonly Dictionary<int, GameActorState> actorIdToActor = new Dictionary<int, GameActorState>();
@@ -205,10 +207,12 @@ public class GameEventRenderer : MonoBehaviour
     }
     class AttackRenderer : IGameEventRenderer
     {
-        public readonly int actorId;
-        public readonly int targetId;
-        public AttackRenderer(GameActor attacker, GameActor target)
+        readonly GameEventRenderer host;
+        readonly int actorId;
+        readonly int targetId;
+        public AttackRenderer(GameEventRenderer host, GameActor attacker, GameActor target)
         {
+            this.host = host;
             actorId = attacker.id;
             targetId = target.id;
         }
@@ -219,12 +223,14 @@ public class GameEventRenderer : MonoBehaviour
     }
     class HealthChangeRenderer : IGameEventRenderer
     {
-        public readonly int actorId;
-        public readonly float baseHealth;
-        public readonly float before;
-        public readonly float after;
-        public HealthChangeRenderer(GameActor a, float before, float after)
+        readonly GameEventRenderer host;
+        readonly int actorId;
+        readonly float baseHealth;
+        readonly float before;
+        readonly float after;
+        public HealthChangeRenderer(GameEventRenderer host, GameActor a, float before, float after)
         {
+            this.host = host;
             actorId = a.id;
             baseHealth = a.baseHealth;
             this.before = before;
@@ -232,16 +238,20 @@ public class GameEventRenderer : MonoBehaviour
         }
         public void Render()
         {
-            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+            var slot = host.actorIdToCharacterSlot[actorId];
+            slot.ShowDamageText((before - after).ToString());
+            slot.Nameplate.HealthBar.Percent = after / baseHealth;
         }
     }
     class DeathRenderer : IGameEventRenderer
     {
-        public readonly int actorId;
-        public DeathRenderer(GameActor a) { actorId = a.id; }
+        readonly GameEventRenderer host;
+        readonly int actorId;
+        public DeathRenderer(GameEventRenderer host, GameActor a) { this.host = host; actorId = a.id; }
         public void Render()
         {
-            Debug.LogWarning($"not implemented: {this.GetType().Name}");
+            var slot = host.actorIdToCharacterSlot[actorId];
+            slot.ToggleDeathIndicator(true);
         }
     }
     Queue<IGameEventRenderer> events = new Queue<IGameEventRenderer>();
