@@ -38,10 +38,10 @@ public class GameEventRenderer : MonoBehaviour
             Debug.Log($"{a.uniqueName} ends");
             EnqueueEvent(new ActorActionsEndRenderer(this, a));
         };
-        GameEvents.Instance.TargetSelected += a =>
+        GameEvents.Instance.ActorTargetedChange += a =>
         {
-            Debug.Log($"{a.uniqueName} chooses target {a.Target}");
-            EnqueueEvent(new TargetSelectedRenderer(this, a));
+            Debug.Log($"{a.uniqueName} targeted {a.Targeted}");
+            EnqueueEvent(new TargetedChangeRenderer(this, a));
         };
         GameEvents.Instance.AttackStart += (a, b) =>
         {
@@ -177,32 +177,21 @@ public class GameEventRenderer : MonoBehaviour
             slot.ToggleTurnIndicator(false);
         }
     }
-    class TargetSelectedRenderer : IGameEventRenderer
+    class TargetedChangeRenderer : IGameEventRenderer
     {
         readonly GameEventRenderer host;
         public readonly int actorId;
-        public readonly int targetId;
-        public TargetSelectedRenderer(GameEventRenderer host, GameActor a)
+        public readonly bool targeted;
+        public TargetedChangeRenderer(GameEventRenderer host, GameActor a)
         {
             this.host = host;
             actorId = a.id;
-            targetId = a.Target == null ? GameActorState.NULL_ID : a.Target.id;
+            targeted = a.Targeted;
         }
         public void Render()
         {
-            if (targetId == GameActorState.NULL_ID)
-            {
-                // clear all existing targets reticles
-                foreach (var slot in host.actorIdToCharacterSlot.Values)
-                {
-                    slot.ToggleTargetIndicator(false);
-                }
-            }
-            else
-            {
-                var slot = host.actorIdToCharacterSlot[targetId];
-                slot.ToggleTargetIndicator(true);
-            }
+            var slot = host.actorIdToCharacterSlot[actorId];
+            slot.ToggleTargetIndicator(targeted);
         }
     }
     class AttackRenderer : IGameEventRenderer
