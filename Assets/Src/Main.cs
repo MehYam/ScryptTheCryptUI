@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-using kaiGameUtil;
+using KaiGameUtil;
 using ScryptTheCrypt;
 
 public class Main : MonoBehaviour

@@ -4,7 +4,7 @@ using System.Text;
 
 using UnityEngine;
 
-using kaiGameUtil;
+using KaiGameUtil;
 using ScryptTheCrypt;
 using ScryptTheCrypt.Actions;
 
