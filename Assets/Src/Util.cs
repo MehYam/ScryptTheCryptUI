@@ -71,12 +71,15 @@ public static class Util
     static public Game GetSampleGameWithPlayers(RNG rng, uint nPlayers)
     {
         var game = new Game(rng);
+        uint midpoint = nPlayers / 2;
         for (var i = 0; i < nPlayers; ++i)
         {
             var actorTemplate = Util.players[game.rng.NextIndex(Util.players)];
             var actor = new GameActor(GameActor.Alignment.Player, actorTemplate.name, actorTemplate.baseHealth);
 
             actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
+            actor.pos = new Point<int>(-2, (int)(nPlayers - midpoint) - i);
+
             game.AddActor(actor);
         }
         return game;

@@ -78,9 +78,12 @@ public class Main : MonoBehaviour
             }
             else
             {
+                uint midpoint = mobsPerWave / 2;
                 for (int i = 0; i < mobsPerWave; ++i)
                 {
-                    game.AddActor(mobGen.Gen(true));
+                    var mob = mobGen.Gen(true);
+                    mob.pos = new Point<int>(2, (int)(mobsPerWave - midpoint) - i);
+                    game.AddActor(mob);
                 }
             }
             while (game.GameProgress == Game.Progress.InProgress) // loop over rounds until wave is clear or players are dead

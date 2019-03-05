@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+using KaiGameUtil;
 using ScryptTheCrypt;
 
 public class GameEventRenderer : MonoBehaviour
@@ -73,6 +74,7 @@ public class GameEventRenderer : MonoBehaviour
         public readonly GameActor.Alignment align;
         public readonly float baseHealth;
         public readonly float health;
+        public readonly Point<int> pos;
         public GameActorState(GameActor actor)
         {
             id = actor.id;
@@ -81,6 +83,7 @@ public class GameEventRenderer : MonoBehaviour
             align = actor.align;
             baseHealth = actor.baseHealth;
             health = actor.Health;
+            pos = actor.pos;
         }
     }
     static private void LayoutActors(GameObject actorParent, GameActor.Alignment alignment)
@@ -134,7 +137,9 @@ public class GameEventRenderer : MonoBehaviour
             host.actorIdToActor[actor.id] = actor;
             host.actorIdToCharacterSlot[actor.id] = slot;
 
-            GameEventRenderer.LayoutActors(parent, actor.align);
+            slot.transform.position = new Vector2(actor.pos.x, actor.pos.y);
+            slot.OnPositionUpdated();
+            //GameEventRenderer.LayoutActors(parent, actor.align);
         }
     }
     class ActorRemovedRenderer : IGameEventRenderer
