@@ -75,6 +75,7 @@ public class GameEventRenderer : MonoBehaviour
         public readonly float baseHealth;
         public readonly float health;
         public readonly Point<int> pos;
+        public readonly Point<int> dir;
         public GameActorState(GameActor actor)
         {
             id = actor.id;
@@ -84,6 +85,7 @@ public class GameEventRenderer : MonoBehaviour
             baseHealth = actor.baseHealth;
             health = actor.Health;
             pos = actor.pos;
+            dir = actor.dir;
         }
     }
     static private void LayoutActors(GameObject actorParent, GameActor.Alignment alignment)
@@ -138,6 +140,12 @@ public class GameEventRenderer : MonoBehaviour
             host.actorIdToCharacterSlot[actor.id] = slot;
 
             slot.transform.position = new Vector2(actor.pos.x, actor.pos.y);
+            if (actor.dir == PointUtil.left)
+            {
+                var scale = slot.transform.localScale;
+                scale.x *= -1;
+                slot.transform.localScale = scale;
+            }
             slot.OnPositionUpdated();
             //GameEventRenderer.LayoutActors(parent, actor.align);
         }

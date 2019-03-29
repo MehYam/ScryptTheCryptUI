@@ -79,6 +79,7 @@ public static class Util
 
             actor.Weapon = Util.weapons[game.rng.NextIndex(Util.weapons)];
             actor.pos = new Point<int>(-2, (int)(nPlayers - midpoint) - i);
+            actor.dir = PointUtil.right;
 
             game.AddActor(actor);
         }
@@ -96,6 +97,8 @@ public static class Util
         public GameActor Gen(bool addDefaultAttack)
         {
             var actor = generators[rng.NextIndex(generators)]();
+            actor.pos = new Point<int>(2, 0);
+            actor.dir = PointUtil.left;
             if (addDefaultAttack)
             {
                 actor.SetScrypt(ScryptUtil.defaultAttack);
