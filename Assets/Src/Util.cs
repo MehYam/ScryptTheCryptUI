@@ -97,8 +97,6 @@ public static class Util
         public GameActor Gen(bool addDefaultAttack)
         {
             var actor = generators[rng.NextIndex(generators)]();
-            actor.pos = new Point<int>(2, 0);
-            actor.dir = PointUtil.left;
             if (addDefaultAttack)
             {
                 actor.SetScrypt(ScryptUtil.defaultAttack);

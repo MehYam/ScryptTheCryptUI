@@ -19,6 +19,21 @@ public class GameEventRenderer : MonoBehaviour
         GameEvents.Instance.ActorAdded += (g, a) =>
         {
             EnqueueEvent(new ActorAddedRenderer(this, a));
+            EnqueueEvent(new ActorPositionRenderer(this, a));
+        };
+        GameEvents.Instance.ActorDirectionChange += (a, old) =>
+        {
+            if (actorIdToCharacterSlot.ContainsKey(a.id))
+            {
+                EnqueueEvent(new ActorPositionRenderer(this, a));
+            }
+        };
+        GameEvents.Instance.ActorPositionChange += (a, old) =>
+        {
+            if (actorIdToCharacterSlot.ContainsKey(a.id))
+            {
+                EnqueueEvent(new ActorPositionRenderer(this, a));
+            }
         };
         GameEvents.Instance.ActorRemoved += (g, a) =>
         {
@@ -138,6 +153,20 @@ public class GameEventRenderer : MonoBehaviour
 
             host.actorIdToActor[actor.id] = actor;
             host.actorIdToCharacterSlot[actor.id] = slot;
+        }
+    }
+    class ActorPositionRenderer : IGameEventRenderer
+    {
+        readonly GameEventRenderer host;
+        readonly GameActorState actor;
+        public ActorPositionRenderer(GameEventRenderer host, GameActor a)
+        {
+            this.host = host;
+            actor = new GameActorState(a);
+        }
+        public void Render()
+        {
+            var slot = host.actorIdToCharacterSlot[actor.id];
 
             slot.transform.position = new Vector2(actor.pos.x, actor.pos.y);
             if (actor.dir == PointUtil.left)
@@ -147,7 +176,6 @@ public class GameEventRenderer : MonoBehaviour
                 slot.transform.localScale = scale;
             }
             slot.OnPositionUpdated();
-            //GameEventRenderer.LayoutActors(parent, actor.align);
         }
     }
     class ActorRemovedRenderer : IGameEventRenderer

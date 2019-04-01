@@ -82,7 +82,9 @@ public class Main : MonoBehaviour
                 for (int i = 0; i < mobsPerWave; ++i)
                 {
                     var mob = mobGen.Gen(true);
-                    mob.pos = new Point<int>(2, (int)(mobsPerWave - midpoint) - i);
+                    mob.pos = new Point<int>(3, (int)(mobsPerWave - midpoint) - i);
+                    mob.dir = PointUtil.left;
+
                     game.AddActor(mob);
                 }
             }

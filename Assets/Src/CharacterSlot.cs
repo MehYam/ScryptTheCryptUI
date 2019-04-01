@@ -48,6 +48,7 @@ public class CharacterSlot : MonoBehaviour
     }
     public void OnPositionUpdated()
     {
+        // slot moved, so we need to update the positions of UI stuff not parented by this Transform
         if (Nameplate != null)
         {
             var offset = align == GameActor.Alignment.Player ? nameplateOffsetL : nameplateOffsetR;
